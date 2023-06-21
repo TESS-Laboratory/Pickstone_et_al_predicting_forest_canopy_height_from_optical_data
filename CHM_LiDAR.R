@@ -103,7 +103,7 @@ slope.plot <-
 slope.plot
 
 aspect.plot <- 
-ggplot() + 
+  ggplot() + 
   theme_bw() +
   geom_spatraster(data = aspect) + 
   scale_fill_continuous_sequential('Sunset', na.value = 'transparent', rev = TRUE, 
@@ -118,11 +118,6 @@ aspect.plot
 
 grid.arrange(slope.plot, aspect.plot, ncol = 2)
 # Calculate min curvature and mean curvature ------------------------------
-
-curvature <- geosphere::curvature(slope, aspect)
-
-
-# random selection  -------------------------------------------------------
 
 
 
@@ -140,7 +135,7 @@ sampled_canopy
 # Plot the sampled canopy height model
 height.plot_80 <- 
   ggplot() + as.d
-  theme_bw() +
+theme_bw() +
   geom_spatraster(data = sampled_canopy) + 
   scale_fill_continuous_sequential('Emrld', na.value = 'transparent', rev = TRUE, 
                                    name = "Canopy Height (m)", 
@@ -149,5 +144,3 @@ height.plot_80 <-
   coord_sf(ylim = c(9664011, 9690000))
 
 height.plot_80
-
-
