@@ -10,16 +10,17 @@ library(geosphere)
 library(gridExtra)
 
 #set working directory 
-setwd("~/OneDrive - University of Exeter/University/Dissertation/Data")
+data_path <- "/Users/bri/Library/CloudStorage/OneDrive-UniversityofExeter/University/Dissertation/Data"
+
 
 # Import data -------------------------------------------------------------
 
 # Read LiDAR dtm and dsm file 
-dtm <- rast("katingan_DEMS/katingan_DTM.tif")
-dsm <- rast("katingan_DEMS/katingan_DSM.tif")
+dtm <- rast(file.path(data_path,"katingan_DEMS/katingan_DTM.tif"))
+dsm <- rast(file.path(data_path,"katingan_DEMS/katingan_DSM.tif"))
 
 #read in the katingan geopackage
-kat <- st_read("katingan_aoi.gpkg")
+kat <- st_read(file.path(data_path, "katingan_aoi.gpkg"))
 
 
 # create plots of data  ---------------------------------------------------
@@ -81,7 +82,7 @@ height.plot
 
 # calculation of other landscape metrics ----------------------------------
 
-slope = terrain(dtm, v = 'slope', unit = "degrees")
+slope = terrain(dtm, v = 'slope')
 aspect = terrain(dtm, v = 'aspect')
 slope
 
