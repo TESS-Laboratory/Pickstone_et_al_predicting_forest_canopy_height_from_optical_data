@@ -11,7 +11,7 @@ library(dplyr)
 #data_path <- "/Users/bri/Library/CloudStorage/OneDrive-UniversityofExeter/University/Dissertation/Data"
 data_path <- "/raid/home/bp424/Documents/MTHM603/Data"
 kat_planet <- rast(file.path(data_path,"Katingan-Comp-22-median.tif"))
-kat_planet
+kat_planet <- rast(file.path(data_path,"kat_planet_sen.tif"))
 
 print(names(kat_planet))
 
@@ -62,8 +62,7 @@ kat_planet$gli <- (2.0 * kat_planet$green - kat_planet$red - kat_planet$blue)/
 #                       kat_planet$nir + 0.5 * kat_planet$red)/kat_planet$nir 
 #                    + kat_planet$red + 0.5)) * (1.0 - 0.25 * ((2.0 *((kat_planet$nir^2.0)- 
 #                                                                       (kat_planet$red^2))))
-CHM
-kat_planet
+
 
 # Calculate Canopy Height Model  ------------------------------------------
 CHM <- dsm - dtm
@@ -71,11 +70,6 @@ CHM <- dsm - dtm
 # calculate slope and aspect from the dtm 
 slope = terrain(dtm, v = 'slope')
 aspect = terrain(dtm, v = 'aspect')
-
-dtm
-slope
-
-
 
 # convert LiDAR components to dataframe -----------------------------------
 
@@ -119,7 +113,7 @@ df_sat <- terra::as.data.frame(kat_planet, xy = T, na.rm = T)%>%
 #Warning message:
 #In n + nv : NAs produced by integer overflow - not sure what this means - is this OK 
 
-write.csv(df_lidar, file = "/raid/home/bp424/Documents/MTHM603/Data/df_sat", row.names = FALSE)
+write.csv(df_sat, file = "/raid/home/bp424/Documents/MTHM603/Data/df_sat", row.names = FALSE)
 
 
 # join the two tables together --------------------------------------------
