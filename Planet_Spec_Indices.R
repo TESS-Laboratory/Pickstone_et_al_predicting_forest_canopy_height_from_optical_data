@@ -4,7 +4,7 @@ library(colorspace)
 library(tidyverse)
 library(sf)
 library(raster)
-
+library(dplyr)
 
 # Import Planet Labs Data -------------------------------------------------
 
@@ -14,7 +14,6 @@ kat_planet <- rast(file.path(data_path,"Katingan-Comp-22-median.tif"))
 kat_planet
 
 print(names(kat_planet))
-
 
 
 # import the LiDAR data ---------------------------------------------------
@@ -40,6 +39,9 @@ kat_planet$NDRE <- (kat_planet$nir - kat_planet$rededge)/(kat_planet$nir +kat_pl
 kat_planet$EVI <- 2.5 * ((kat_planet$nir) - (kat_planet$red)) /
   ((kat_planet$nir) + 6 * (kat_planet$red) - 7.5 * (kat_planet$blue) + 1)
 
+outputfile <- "/raid/home/bp424/Documents/MTHM603/Data/kat_planet_sen.tif"
+writeRaster(kat_planet, filename = outputfile)
+
 #Calculations by BP
 kat_planet$AVI <- (kat_planet$nir * (1.0 - kat_planet$red) * 
                      (kat_planet$nir - kat_planet$red))/3
@@ -60,12 +62,71 @@ kat_planet$gli <- (2.0 * kat_planet$green - kat_planet$red - kat_planet$blue)/
 #                       kat_planet$nir + 0.5 * kat_planet$red)/kat_planet$nir 
 #                    + kat_planet$red + 0.5)) * (1.0 - 0.25 * ((2.0 *((kat_planet$nir^2.0)- 
 #                                                                       (kat_planet$red^2))))
-
+CHM
+kat_planet
 
 # Calculate Canopy Height Model  ------------------------------------------
-kat_planet$CHM <- dsm - dtm
-canopy_height
+CHM <- dsm - dtm
 
+# calculate slope and aspect from the dtm 
+slope = terrain(dtm, v = 'slope')
+aspect = terrain(dtm, v = 'aspect')
+
+dtm
+slope
+
+
+
+# convert LiDAR components to dataframe -----------------------------------
+
+# Convert the DTM raster to a data frame
+df_dtm <- as.data.frame(dtm, xy = TRUE, na.rm = TRUE) %>%
+  as_tibble()
+
+# Convert the CHM raster to a data frame
+
+df_CHM <- terra::as.data.frame(CHM, xy = T, na.rm = T)%>%
+  tibble()
+
+dsm
+# Convert the slope raster to a data frame
+df_slope <- terra::as.data.frame(slope, xy = T, na.rm = T)%>%
+  tibble()
+
+# Convert the aspect raster to a data frame
+
+df_aspect <- terra::as.data.frame(aspect, xy = T, na.rm = T)%>%
+  tibble()
+
+#combine dtm, slope, aspect, CHM data frame based on coordinates
+df_lidar <- inner_join(df_dtm, df_slope, by = c("x", "y"), suffix = c("_dtm", "_slope")) %>%
+  inner_join(df_aspect, by = c("x", "y"), suffix = c("_slope", "_aspect")) %>%
+  inner_join(df_CHM, by = c("x", "y"), suffix = c("_aspect", "_CHM"))
+
+df_lidar <- df_lidar %>%
+  rename(dtm = katingan_DTM_CHM, CHM = katingan_DSM)
+
+#export data frame to csv be easily imported later 
+# Export the data frame as a CSV file
+
+write.csv(df_lidar, file = "/raid/home/bp424/Documents/MTHM603/Data/df_lidar.csv", row.names = FALSE)
+
+ # convert satellite data to df --------------------------------------------
+df_sat <- terra::as.data.frame(kat_planet, xy = T, na.rm = T)%>%
+  tibble()
+
+#this made a warning message: 
+#Warning message:
+#In n + nv : NAs produced by integer overflow - not sure what this means - is this OK 
+
+write.csv(df_lidar, file = "/raid/home/bp424/Documents/MTHM603/Data/df_sat", row.names = FALSE)
+
+
+# join the two tables together --------------------------------------------
+
+df <- full_join(df_sat, df_lidar, by = c("x", "y"))
+
+# plotting the spectral bands -------------------------------------
 
 #plot the first 8 bands 
 
