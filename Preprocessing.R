@@ -36,15 +36,12 @@ kat_planet$nir <- (kat_planet$nir/10000)
 # Do the band math - HG examples
 kat_planet$NDVI <- (kat_planet$nir - kat_planet$red)/(kat_planet$nir +kat_planet$red)
 kat_planet$NDRE <- (kat_planet$nir - kat_planet$rededge)/(kat_planet$nir +kat_planet$rededge)
-kat_planet$EVI <- 2.5 * ((kat_planet$nir) - (kat_planet$red)) /
-  ((kat_planet$nir) + 6 * (kat_planet$red) - 7.5 * (kat_planet$blue) + 1)
-
-outputfile <- "/raid/home/bp424/Documents/MTHM603/Data/kat_planet_sen.tif"
-writeRaster(kat_planet, filename = outputfile)
+kat_planet$EVI <- 2.5 * ((kat_planet$nir/10000) - (kat_planet$red/10000)) /
+  ((kat_planet$nir/10000) + 6 * (kat_planet$red/10000) - 7.5 * (kat_planet$blue/10000) + 1)
 
 #Calculations by BP
 kat_planet$AVI <- (kat_planet$nir * (1.0 - kat_planet$red) * 
-                     (kat_planet$nir - kat_planet$red))/3
+                     (kat_planet$nir - kat_planet$red))^(1/3)
 kat_planet$RDVI <- (kat_planet$nir - kat_planet$red)/((kat_planet$nir + kat_planet$red)^0.5)
 kat_planet$CIRE <- ((kat_planet$nir/kat_planet$rededge)-1)
 kat_planet$GNDVI <- (kat_planet$nir - kat_planet$green)/
@@ -55,14 +52,13 @@ kat_planet$BNDVI <- (kat_planet$nir - kat_planet$blue)/(kat_planet$nir + kat_pla
 kat_planet$CVI <- (kat_planet$nir * kat_planet$red)/(kat_planet$green^2.0)
 kat_planet$GBNDVI <- (kat_planet$nir - (kat_planet$green + kat_planet$blue))/
   (kat_planet$nir + (kat_planet$green + kat_planet$blue))
-kat_planet$gli <- (2.0 * kat_planet$green - kat_planet$red - kat_planet$blue)/
+kat_planet$GLI <- (2.0 * kat_planet$green - kat_planet$red - kat_planet$blue)/
   (2.0 * kat_planet$green + kat_planet$red + kat_planet$blue)
 
 #kat_planet$GEMI <- ((2 *((kat_planet$nir^2.0)-(kat_planet$red^2.0)) + 1.5 * 
 #                       kat_planet$nir + 0.5 * kat_planet$red)/kat_planet$nir 
 #                    + kat_planet$red + 0.5)) * (1.0 - 0.25 * ((2.0 *((kat_planet$nir^2.0)- 
 #                                                                       (kat_planet$red^2))))
-
 
 # Calculate Canopy Height Model  ------------------------------------------
 CHM <- dsm - dtm
@@ -106,14 +102,17 @@ df_lidar <- df_lidar %>%
 write.csv(df_lidar, file = "/raid/home/bp424/Documents/MTHM603/Data/df_lidar.csv", row.names = FALSE)
 
  # convert satellite data to df --------------------------------------------
-df_sat <- terra::as.data.frame(kat_planet, xy = T, na.rm = T)%>%
+df_sat <- as.data.frame(kat_planet, xy = T, na.rm = T)%>%
   tibble()
+
+sum(is.na(df_sat))
+
 
 #this made a warning message: 
 #Warning message:
 #In n + nv : NAs produced by integer overflow - not sure what this means - is this OK 
 
-write.csv(df_sat, file = "/raid/home/bp424/Documents/MTHM603/Data/df_sat", row.names = FALSE)
+write.csv(df_sat, file = "/raid/home/bp424/Documents/MTHM603/Data/df_sen.csv", row.names = FALSE)
 
 
 # join the two tables together --------------------------------------------
