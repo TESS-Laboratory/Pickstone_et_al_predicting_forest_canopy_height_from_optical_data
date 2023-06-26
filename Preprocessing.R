@@ -11,10 +11,9 @@ library(dplyr)
 #data_path <- "/Users/bri/Library/CloudStorage/OneDrive-UniversityofExeter/University/Dissertation/Data"
 data_path <- "/raid/home/bp424/Documents/MTHM603/Data"
 kat_planet <- rast(file.path(data_path,"Katingan-Comp-22-median.tif"))
-kat_planet <- rast(file.path(data_path,"kat_planet_sen.tif"))
-
+df_lidar <- read_csv(file.path(data_path, "df_lidar.csv"))
+df_sat <- read_csv(file.path(data_path, "df_sen.csv"))
 print(names(kat_planet))
-
 
 # import the LiDAR data ---------------------------------------------------
 
@@ -22,7 +21,10 @@ print(names(kat_planet))
 dtm <- rast(file.path(data_path,"Original-DEMS/katingan_DEMS/katingan_DTM.tif"))
 dsm <- rast(file.path(data_path,"Original-DEMS/katingan_DEMS/katingan_DSM.tif"))
 
-#scale down the 8 existing spectral bands
+# crop the Satellite Data to the LiDAR region -----------------------------
+kat_planet <- crop(kat_planet, dtm)
+
+#scale down the 8 existing bands
 kat_planet$coastal_blue <- (kat_planet$coastal_blue/10000)
 kat_planet$blue <- (kat_planet$blue/10000)
 kat_planet$green_i <- (kat_planet$green_i/10000)
@@ -36,12 +38,11 @@ kat_planet$nir <- (kat_planet$nir/10000)
 # Do the band math - HG examples
 kat_planet$NDVI <- (kat_planet$nir - kat_planet$red)/(kat_planet$nir +kat_planet$red)
 kat_planet$NDRE <- (kat_planet$nir - kat_planet$rededge)/(kat_planet$nir +kat_planet$rededge)
-kat_planet$EVI <- 2.5 * ((kat_planet$nir/10000) - (kat_planet$red/10000)) /
-  ((kat_planet$nir/10000) + 6 * (kat_planet$red/10000) - 7.5 * (kat_planet$blue/10000) + 1)
+kat_planet$EVI <- 2.5 * ((kat_planet$nir) - (kat_planet$red)) /
+  ((kat_planet$nir) + 6 * (kat_planet$red) - 7.5 * (kat_planet$blue) + 1)
 
 #Calculations by BP
-kat_planet$AVI <- (kat_planet$nir * (1.0 - kat_planet$red) * 
-                     (kat_planet$nir - kat_planet$red))^(1/3)
+kat_planet$AVI <- (kat_planet$nir * (1 - kat_planet$red)*(kat_planet$nir - kat_planet$red))^(1/3)
 kat_planet$RDVI <- (kat_planet$nir - kat_planet$red)/((kat_planet$nir + kat_planet$red)^0.5)
 kat_planet$CIRE <- ((kat_planet$nir/kat_planet$rededge)-1)
 kat_planet$GNDVI <- (kat_planet$nir - kat_planet$green)/
@@ -49,19 +50,31 @@ kat_planet$GNDVI <- (kat_planet$nir - kat_planet$green)/
 kat_planet$RGBVI <- (kat_planet$green^2 - kat_planet$blue * kat_planet$red)/
   (kat_planet$green^2 + kat_planet$blue * kat_planet$red)
 kat_planet$BNDVI <- (kat_planet$nir - kat_planet$blue)/(kat_planet$nir + kat_planet$blue)
-kat_planet$CVI <- (kat_planet$nir * kat_planet$red)/(kat_planet$green^2.0)
+kat_planet$CVI <- (kat_planet$nir * kat_planet$red)/(kat_planet$green^2)
 kat_planet$GBNDVI <- (kat_planet$nir - (kat_planet$green + kat_planet$blue))/
   (kat_planet$nir + (kat_planet$green + kat_planet$blue))
-kat_planet$GLI <- (2.0 * kat_planet$green - kat_planet$red - kat_planet$blue)/
-  (2.0 * kat_planet$green + kat_planet$red + kat_planet$blue)
+kat_planet$GLI <- (2 * kat_planet$green - kat_planet$red - kat_planet$blue)/
+  (2 * kat_planet$green + kat_planet$red + kat_planet$blue)
 
 #kat_planet$GEMI <- ((2 *((kat_planet$nir^2.0)-(kat_planet$red^2.0)) + 1.5 * 
 #                       kat_planet$nir + 0.5 * kat_planet$red)/kat_planet$nir 
 #                    + kat_planet$red + 0.5)) * (1.0 - 0.25 * ((2.0 *((kat_planet$nir^2.0)- 
 #                                                                       (kat_planet$red^2))))
 
+# convert satellite data to df --------------------------------------------
+kat_planet <- as.numeric(kat_planet)
+
+df_sat <- terra::as.data.frame(kat_planet, xy = TRUE, na.rm = TRUE)%>%
+  tibble()
+
+write.csv(df_sat, file = "/raid/home/bp424/Documents/MTHM603/Data/df_sen.csv", row.names = FALSE)
+
+df_sat
+
+
 # Calculate Canopy Height Model  ------------------------------------------
 CHM <- dsm - dtm
+
 
 # calculate slope and aspect from the dtm 
 slope = terrain(dtm, v = 'slope')
@@ -77,7 +90,7 @@ df_dtm <- as.data.frame(dtm, xy = TRUE, na.rm = TRUE) %>%
 
 df_CHM <- terra::as.data.frame(CHM, xy = T, na.rm = T)%>%
   tibble()
-
+df
 dsm
 # Convert the slope raster to a data frame
 df_slope <- terra::as.data.frame(slope, xy = T, na.rm = T)%>%
@@ -101,24 +114,11 @@ df_lidar <- df_lidar %>%
 
 write.csv(df_lidar, file = "/raid/home/bp424/Documents/MTHM603/Data/df_lidar.csv", row.names = FALSE)
 
- # convert satellite data to df --------------------------------------------
-df_sat <- as.data.frame(kat_planet, xy = T, na.rm = T)%>%
-  tibble()
-
-sum(is.na(df_sat))
-
-
-#this made a warning message: 
-#Warning message:
-#In n + nv : NAs produced by integer overflow - not sure what this means - is this OK 
-
-write.csv(df_sat, file = "/raid/home/bp424/Documents/MTHM603/Data/df_sen.csv", row.names = FALSE)
-
-
 # join the two tables together --------------------------------------------
 
-df <- full_join(df_sat, df_lidar, by = c("x", "y"))
-
+df <- merge(df_sat, df_lidar, by = c("x", "y"))
+write.csv(df, file = "/raid/home/bp424/Documents/MTHM603/Data/df.csv", row.names = FALSE)
+df
 # plotting the spectral bands -------------------------------------
 
 #plot the first 8 bands 
