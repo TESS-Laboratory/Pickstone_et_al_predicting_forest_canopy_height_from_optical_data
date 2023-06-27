@@ -62,14 +62,10 @@ kat_planet$GLI <- (2 * kat_planet$green - kat_planet$red - kat_planet$blue)/
 #                                                                       (kat_planet$red^2))))
 
 # convert satellite data to df --------------------------------------------
-kat_planet <- as.numeric(kat_planet)
-
 df_sat <- terra::as.data.frame(kat_planet, xy = TRUE, na.rm = TRUE)%>%
   tibble()
 
 write.csv(df_sat, file = "/raid/home/bp424/Documents/MTHM603/Data/df_sen.csv", row.names = FALSE)
-
-df_sat
 
 
 # Calculate Canopy Height Model  ------------------------------------------
