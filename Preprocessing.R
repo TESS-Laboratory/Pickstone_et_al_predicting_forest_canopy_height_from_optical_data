@@ -11,8 +11,8 @@ library(dplyr)
 #data_path <- "/Users/bri/Library/CloudStorage/OneDrive-UniversityofExeter/University/Dissertation/Data"
 data_path <- "/raid/home/bp424/Documents/MTHM603/Data"
 kat_planet <- rast(file.path(data_path,"Katingan-Comp-22-median.tif"))
-df_lidar <- read_csv(file.path(data_path, "df_lidar.csv"))
-df_sat <- read_csv(file.path(data_path, "df_sen.csv"))
+
+
 print(names(kat_planet))
 
 # import the LiDAR data ---------------------------------------------------
@@ -20,9 +20,21 @@ print(names(kat_planet))
 # Read LiDAR dtm and dsm file 
 dtm <- rast(file.path(data_path,"Original-DEMS/katingan_DEMS/katingan_DTM.tif"))
 dsm <- rast(file.path(data_path,"Original-DEMS/katingan_DEMS/katingan_DSM.tif"))
+kat_cube <- rast(file.path(data_path, "kat_cube_repro.tif"))
+lidar_cube <- rast(file.path(data_path, "lidar_cube2.tif"))
+comb_cube <- rast(file.path(data_path, "comb_dat.tif"))
 
-# crop the Satellite Data to the LiDAR region -----------------------------
+
+# Crop the data so they have the same extent ------------------------------
+
+# Resample kat_planet to match the dimensions, resolution, and extent of dtm
+#kat_planet_resampled <- resample(kat_planet, dtm)
+
+# crop the data -----------------------------
+dtm <- crop(dtm, kat_planet)
+dsm <- crop(dsm, kat_planet)
 kat_planet <- crop(kat_planet, dtm)
+
 
 #scale down the 8 existing bands
 kat_planet$coastal_blue <- (kat_planet$coastal_blue/10000)
@@ -56,65 +68,65 @@ kat_planet$GBNDVI <- (kat_planet$nir - (kat_planet$green + kat_planet$blue))/
 kat_planet$GLI <- (2 * kat_planet$green - kat_planet$red - kat_planet$blue)/
   (2 * kat_planet$green + kat_planet$red + kat_planet$blue)
 
+
 #kat_planet$GEMI <- ((2 *((kat_planet$nir^2.0)-(kat_planet$red^2.0)) + 1.5 * 
 #                       kat_planet$nir + 0.5 * kat_planet$red)/kat_planet$nir 
 #                    + kat_planet$red + 0.5)) * (1.0 - 0.25 * ((2.0 *((kat_planet$nir^2.0)- 
 #                                                                       (kat_planet$red^2))))
 
-# convert satellite data to df --------------------------------------------
-df_sat <- terra::as.data.frame(kat_planet, xy = TRUE, na.rm = TRUE)%>%
-  tibble()
 
-write.csv(df_sat, file = "/raid/home/bp424/Documents/MTHM603/Data/df_sen.csv", row.names = FALSE)
+kat_planet <- kat_cube
+# Export data to tif file
+writeRaster(kat_cube, filename = "/raid/home/bp424/Documents/MTHM603/Data/kat_cube.tif")
 
 
 # Calculate Canopy Height Model  ------------------------------------------
 CHM <- dsm - dtm
+names(CHM) <- "CHM"
+dtm_layer <- dtm - 0
+names(dtm_layer) <- "dtm"
 
-
-# calculate slope and aspect from the dtm 
+# calculate covariates from the dtm 
 slope = terrain(dtm, v = 'slope')
 aspect = terrain(dtm, v = 'aspect')
+TRI = terrain(dtm, v = 'TRIrmsd')
+names(TRI) <- "TRI"
+rough = terrain(dtm, v = "roughness")
+names(rough) <- "rough"
 
-# convert LiDAR components to dataframe -----------------------------------
+# label: build-cube for LiDAR data
 
-# Convert the DTM raster to a data frame
-df_dtm <- as.data.frame(dtm, xy = TRUE, na.rm = TRUE) %>%
+lidar_cube <- c(dtm_layer, aspect, slope, TRI, rough, CHM)
+
+#export lidar cube
+writeRaster(lidar_cube, filename = "/raid/home/bp424/Documents/MTHM603/Data/lidar_cube2.tif")
+
+# combine all layers from S2 and LiDAR ------------------------------------
+
+kat_repro <- project(kat_cube, lidar_cube)
+writeRaster(kat_repro, filename = "/raid/home/bp424/Documents/MTHM603/Data/kat_cube_repro.tif")
+
+
+kat_df <- as.data.frame(kat_cube, xy=TRUE, na.rm = TRUE) %>%
   as_tibble()
 
-# Convert the CHM raster to a data frame
+lidar_df <- as.data.frame(lidar_cube, xy=TRUE, na.rm = TRUE) %>%
+  as_tibble()
 
-df_CHM <- terra::as.data.frame(CHM, xy = T, na.rm = T)%>%
-  tibble()
-df
-dsm
-# Convert the slope raster to a data frame
-df_slope <- terra::as.data.frame(slope, xy = T, na.rm = T)%>%
-  tibble()
+comb_dat <- c(kat_repro,lidar_cube)
 
-# Convert the aspect raster to a data frame
+writeRaster(comb_dat, filename = "/raid/home/bp424/Documents/MTHM603/Data/comb_dat.tif")
 
-df_aspect <- terra::as.data.frame(aspect, xy = T, na.rm = T)%>%
-  tibble()
+# this will be our dataframe for the ML section
+comb_df <- as.data.frame(comb_cube, xy=TRUE, na.rm = TRUE) %>%
+  as_tibble()
 
-#combine dtm, slope, aspect, CHM data frame based on coordinates
-df_lidar <- inner_join(df_dtm, df_slope, by = c("x", "y"), suffix = c("_dtm", "_slope")) %>%
-  inner_join(df_aspect, by = c("x", "y"), suffix = c("_slope", "_aspect")) %>%
-  inner_join(df_CHM, by = c("x", "y"), suffix = c("_aspect", "_CHM"))
+write.csv(lidar_df, file = "/raid/home/bp424/Documents/MTHM603/Data/lidar_df.csv", row.names = FALSE)
 
-df_lidar <- df_lidar %>%
-  rename(dtm = katingan_DTM_CHM, CHM = katingan_DSM)
 
-#export data frame to csv be easily imported later 
-# Export the data frame as a CSV file
+write.csv(comb_df, file = "/raid/home/bp424/Documents/MTHM603/Data/comb_df.csv", row.names = FALSE)
 
-write.csv(df_lidar, file = "/raid/home/bp424/Documents/MTHM603/Data/df_lidar.csv", row.names = FALSE)
 
-# join the two tables together --------------------------------------------
-
-df <- merge(df_sat, df_lidar, by = c("x", "y"))
-write.csv(df, file = "/raid/home/bp424/Documents/MTHM603/Data/df.csv", row.names = FALSE)
-df
 # plotting the spectral bands -------------------------------------
 
 #plot the first 8 bands 
