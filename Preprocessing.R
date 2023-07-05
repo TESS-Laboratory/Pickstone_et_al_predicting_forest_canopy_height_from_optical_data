@@ -11,10 +11,12 @@ library(dplyr)
 #data_path <- "/Users/bri/Library/CloudStorage/OneDrive-UniversityofExeter/University/Dissertation/Data"
 data_path <- "/raid/home/bp424/Documents/MTHM603/Data"
 kat_planet <- rast(file.path(data_path,"Katingan-Comp-22-median.tif"))
-lidar_cube <- rast((file.path(data_path,"lidar_cube2.tif")))
-kat_cube <- rast((file.path(data_path,"kat_cube.tif")))
+lidar_cube <- rast((file.path(data_path,"lidar_cube.tif")))
+kat_planet <- rast((file.path(data_path,"kat_cube.tif")))
 print(names(kat_planet))
 
+lidar_cube
+kat_cube
 
 # import the LiDAR data ---------------------------------------------------
 
@@ -98,8 +100,9 @@ writeRaster(lidar_cube, filename = "/raid/home/bp424/Documents/MTHM603/Data/lida
 lidar_cube_r <- project(lidar_cube, kat_planet)
 
 comb_dat <- c(kat_planet, lidar_cube_r)
+comb_dat
 
 comb_df <- as.data.frame(comb_dat, xy=TRUE, na.rm = TRUE) %>%
   as_tibble()
 
-write.csv(com_df, file = "/raid/home/bp424/Documents/MTHM603/Data/final_df.csv", row.names = FALSE)
+write.csv(comb_df, file = "/raid/home/bp424/Documents/MTHM603/Data/final_df.csv", row.names = FALSE)
