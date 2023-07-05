@@ -14,9 +14,6 @@ kat_planet <- rast(file.path(data_path,"Katingan-Comp-22-median.tif"))
 
 print(names(kat_planet))
 
-lidar_cube
-kat_cube
-
 # import the LiDAR data ---------------------------------------------------
 
 # Read LiDAR dtm and dsm file 
