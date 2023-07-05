@@ -2,6 +2,7 @@ library(mlr3)
 library(mlr3tuning)
 library(mlr3learners)
 library(ranger)
+library(tidyverse)
 
 
 set.seed(1234)
@@ -10,15 +11,6 @@ set.seed(1234)
 data_path <- "/raid/home/bp424/Documents/MTHM603/Data"
 kat_planet <- rast(file.path(data_path,"Katingan-Comp-22-median.tif"))
 df <- read_csv(file.path(data_path, "final_df.csv"))
-
-
-sds = apply(assay(df, 'exprs'),1,sd)
-
-
-# filter out normal tissues
-se_small = se[order(sds,decreasing = TRUE)[1:200],
-              colData(se)$characteristics_ch1.1=='normal: no']
-dat = assay(se_small, 'exprs')
 
 
 # Define your regression task with spatial-temporal components
@@ -35,16 +27,16 @@ task <- mlr3spatiotempcv::TaskRegrST$new(
 
 
 # Define the random forest learner
-learner <- lrn("regr.randomForest")  # You can adjust the number of trees as desired
+learner <- lrn("classif.ranger")  
 
-resample <- mlr3::rsmp("repeated_spcv_coords", folds = 3, repeats = 2)
+resample <- mlr3::rsmp("repeated_spcv_coords", folds = 3, repeats = 1)
 
 afs=auto_fselector( 
   fselector=fs("random_search"), 
   learner=learner, 
   resampling=resample, 
   measure=measure, 
-  term_evals=10) 
+  term_evals=1) 
 
 #optimizefeaturesubsetandfitfinalmodel 
 future::plan("multisession", workers = 10)

@@ -41,7 +41,6 @@ wss <- sapply(k_values, function(k) {
 # Plot the elbow curve
 plot(k_values, wss, type = "b", pch = 19, frame = FALSE, xlab = "Number of Clusters (k)", ylab = "Total Within-Cluster Sum of Squares (wss)")
 
-df
 
 # generate a task ---------------------------------------------------------
 task = mlr3spatiotempcv::TaskRegrST$new(
