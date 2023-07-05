@@ -27,7 +27,7 @@ task <- mlr3spatiotempcv::TaskRegrST$new(
 
 
 # Define the random forest learner
-learner <- lrn("classif.ranger")  
+learner <- lrn("regr.randomForest")  
 
 resample <- mlr3::rsmp("repeated_spcv_coords", folds = 3, repeats = 1)
 
