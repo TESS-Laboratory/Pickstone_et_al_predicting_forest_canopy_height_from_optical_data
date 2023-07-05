@@ -11,8 +11,7 @@ library(dplyr)
 #data_path <- "/Users/bri/Library/CloudStorage/OneDrive-UniversityofExeter/University/Dissertation/Data"
 data_path <- "/raid/home/bp424/Documents/MTHM603/Data"
 kat_planet <- rast(file.path(data_path,"Katingan-Comp-22-median.tif"))
-lidar_cube <- rast((file.path(data_path,"lidar_cube.tif")))
-kat_planet <- rast((file.path(data_path,"kat_cube.tif")))
+
 print(names(kat_planet))
 
 lidar_cube
