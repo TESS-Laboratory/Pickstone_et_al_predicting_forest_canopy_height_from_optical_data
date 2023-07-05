@@ -94,16 +94,13 @@ lidar_cube <- c(dtm, aspect, slope, TRI, rough, CHM)
 #export lidar cube
 writeRaster(lidar_cube, filename = "/raid/home/bp424/Documents/MTHM603/Data/lidar_cube.tif")
 
-lidar_cube <- rast(file.path(data_path,"lidar_cube.tif"))
-kat_planet <- rast(file.path(data_path,"kat_cube.tif"))
-lidar
 
 # combine all layers from S2 and LiDAR ------------------------------------
 lidar_cube_r <- project(lidar_cube, kat_planet)
-lidar_cube_r
+
 
 comb_dat <- c(kat_planet, lidar_cube_r)
-comb_dat
+
 writeRaster(comb_dat, filename = "/raid/home/bp424/Documents/MTHM603/Data/comb_cube.tif")
 
 comb_df <- as.data.frame(comb_dat, xy=TRUE, na.rm = TRUE) %>%
