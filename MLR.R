@@ -23,7 +23,7 @@ set.seed(1234)
 
 # load in the datafile ----------------------------------------------------
 data_path <- "/raid/home/bp424/Documents/MTHM603/Data"
-kat_planet <- rast(file.path(data_path,"Katingan-Comp-22-median.tif"))
+cube <- rast(file.path(data_path,"comb_cube.tif"))
 df <- read_csv(file.path(data_path, "final_df.csv"))
 
 # find optimal number of clusters -----------------------------------------
@@ -42,6 +42,7 @@ wss <- sapply(k_values, function(k) {
 plot(k_values, wss, type = "b", pch = 19, frame = FALSE, xlab = "Number of Clusters (k)", ylab = "Total Within-Cluster Sum of Squares (wss)")
 
 
+
 # generate a task ---------------------------------------------------------
 task = mlr3spatiotempcv::TaskRegrST$new(
   id = "kat_base_CHM", 
@@ -50,20 +51,19 @@ task = mlr3spatiotempcv::TaskRegrST$new(
   coordinate_names= c("x", "y"), 
   extra_args = list(
     coords_as_features = FALSE, 
-    crs= terra::crs(kat_planet))
+    crs= terra::crs(cube))
 )
 
 
+
+
 # define a resampling plan ------------------------------------------------
-# Define the spcv plans
 # Define the spcv plans
 spcv_plan1 <- mlr3::rsmp("cv", folds = 10)
 spcv_plan2 <- mlr3::rsmp("repeated_spcv_coords", folds = 3, repeats = 2)
 spcv_plan3 <- mlr3::rsmp("spcv_coords", folds = 3)
 spcv_plan4 <- mlr3::rsmp("spcv_disc", folds = 3, radius = 50)
 spcv_plan4 <- mlr3::rsmp("spcv_block", folds = 3, range = 100)
-
-
 
 
 # Create an empty list to store the benchmark results
@@ -95,18 +95,7 @@ for (i in seq_along(aggr_list)) {
 
 # complete multiple linear regression -------------------------------------
 
-# Define the task
-task <- mlr3spatiotempcv::TaskRegrST$new(
-  id = "kat_base_CHM", 
-  backend = df,
-  target = "CHM",
-  coordinate_names = c("x", "y"), 
-  extra_args = list(
-    coords_as_features = FALSE, 
-    crs = terra::crs(kat_planet))
-)
-
-# Define the learner
+# Define the learner and resampling plan
 
 resample <- mlr3::rsmp("repeated_spcv_coords", folds = 3, repeats = 2)
 measure <- msr("regr.rsq")
@@ -120,7 +109,8 @@ afs=auto_fselector(
   learner=learner, 
   resampling=resample, 
   measure=measure, 
-  term_evals=10) 
+  term_evals=10)
+  #subset_size = 0.3)) 
 
 #optimizefeaturesubsetandfitfinalmodel 
 future::plan("multisession", workers = 10)
@@ -128,50 +118,7 @@ progressr::with_progress(expr = {
   afs$train(task)
 })
 
-
-library(mlr3)
-library(mlr3learners)
-library(mlr3tuning)
-library(progressr)
-
-# Define the task
-task <- mlr3spatiotempcv::TaskRegrST$new(
-  id = "kat_base_CHM", 
-  backend = df,
-  target = "CHM",
-  coordinate_names = c("x", "y"), 
-  extra_args = list(
-    coords_as_features = FALSE, 
-    crs = terra::crs(kat_planet))
-)
-
-# Define the learner
-learner <- lrn("regr.lm")
-
-# Define the resampling strategy
-resampling <- rsmp("repeated_spcv_coords", folds = 3, repeats = 2)
-
-# Define the measure
-measure <- msr("regr.rsq")
-
-# Create an autofeature selector
-afs <- auto_fselector(
-  fselector = fs("random_search"),
-  learner = learner,
-  resampling = resampling,
-  measure = measure,
-  term_evals = 10,
-  subset_size = 0.3  # Set the desired subset size to 30%
-)
-
-# Optimize feature subset and fit the final model
-future::plan("multisession", workers = 10)
-with_progress({
-  afs$train(task)
-})
-
-
-# ressample_lm ------------------------------------------------------------
+# resample_lm ------------------------------------------------------------
 
 resample_lm <- progressr::with_progress(expr ={
   mlr3::resample(
@@ -183,12 +130,9 @@ resample_lm <- progressr::with_progress(expr ={
   )
 })
 
-# visualise the resamples -------------------------------------------------
-
-
 # evaluate ----------------------------------------------------------------
 
-resample_lm$aggregate(measure = c(
+metric_scores <- resample_lm$aggregate(measure = c(
   mlr3::msr("regr.bias"),
   mlr3::msr("regr.rmse"),
   mlr3::msr("regr.rsq"),
@@ -197,16 +141,19 @@ resample_lm$aggregate(measure = c(
 
 # visualise ---------------------------------------------------------------
 
-resample_lm$prediction() |> 
+
+
+resample_lm$prediction() %>%
   ggplot() +
-  aes(x=response, y=truth)+
+  aes(x = response, y = truth) +
   geom_bin_2d(binwidth = 0.3) +
-  scale_fill_viridis_c(trans=scales::yj_trans(0.1), option="G", direction=-1) +
-  geom_abline(slope=1) +
-  theme_light()
-
-
-# train the model ---------------------------------------------------------
-
-at$learner$train(task)
+  scale_fill_viridis_c(
+    trans = scales::yj_trans(0.1),
+    option = "G",
+    direction = -1,
+    breaks = c(0, 5000, 20000, 50000)
+  ) +
+  geom_abline(slope = 1) +
+  theme_light() +
+  labs(x = "Predicted Canopy Height (m)", y = "Observed Canopy Height (m)")
 

@@ -100,7 +100,7 @@ comb_dat <- c(kat_planet, lidar_cube_r)
 
 writeRaster(comb_dat, filename = "/raid/home/bp424/Documents/MTHM603/Data/comb_cube.tif")
 
-comb_df <- as.data.frame(comb_dat, xy=TRUE, na.rm = TRUE) %>%
-  as_tibble()
+comb_df <- as.data.frame(cube, xy=TRUE) %>%
+  tidyr::drop_na()
 
 write.csv(comb_df, file = "/raid/home/bp424/Documents/MTHM603/Data/final_df.csv", row.names = FALSE)
