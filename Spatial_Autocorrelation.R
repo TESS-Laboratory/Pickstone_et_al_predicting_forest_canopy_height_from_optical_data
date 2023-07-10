@@ -6,7 +6,6 @@ library(terra)
 library(sf)
 library(spdep)
 library(sp)
-library(sfExtras)
 library(tidyverse)
 
 # load in required datafiles ----------------------------------------------
@@ -30,21 +29,11 @@ coordinates(CHM_points) <- ~x + y
 variogram_model <- variogram(CHM ~ 1, data = CHM_points)
 
 # Plot the variogram to visualize the autocorrelation structure
-plot(variogram_model, xlim = c(0, 10000), ylim = c(0, 60))
-
+plot(variogram_model, xlim = c(0, 10000), ylim = c(0, 60), 
+     xlab = "Distance (m)", ylab = "Semi-variance")
 
 
 # Check spatial correlation using Moran's I -------------------------------
 
+spcor <- terra::autocor(CHM_100, method="moran", global=TRUE)
 
-# Create a spatial weights matrix
-CHM_points
-coords <- CHM_points[, 1:2]
-weights <- dnearneigh(coords, 0, 8000)
-listw <- nb2listw(weights)
-
-# Perform Moran's I analysis
-moran_result <- moran.test(CHM_points$CHM, listw)
-
-# Check the Moran's I test results
-moran_result
