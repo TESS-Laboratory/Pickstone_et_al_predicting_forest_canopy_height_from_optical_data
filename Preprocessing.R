@@ -1,3 +1,9 @@
+#The following code is used for pre-processing the Sentinel-2 and LiDAR data
+#This includes calculation of vegetation spectral indices and topographic metrics. 
+#As well as resampling the data so they all have the same resolution 
+
+
+# import packages needed for the analysis ---------------------------------
 library(terra)
 library(viridisLite)
 library(colorspace)
@@ -22,7 +28,7 @@ dsm <- rast(file.path(data_path,"Original-DEMS/katingan_DEMS/katingan_DSM.tif"))
 
 
 # Crop the data so they have the same extent ------------------------------
-
+#this will also save computing time for the calculations 
 dtm <- crop(dtm, kat_planet)
 dsm <- crop(dsm, kat_planet)
 kat_planet <- crop(kat_planet, dtm)
@@ -66,16 +72,11 @@ kat_planet$GEMI <- ((2 *((kat_planet$nir^2.0)-(kat_planet$red^2.0)) + 1.5 *
   ((kat_planet$red - 0.125)/(1 - kat_planet$red))
 
 
-kat_planet
-# Export data to tif file
-writeRaster(kat_planet, filename = "/raid/home/bp424/Documents/MTHM603/Data/kat_cube.tif")
-
-
 # Calculate Canopy Height Model  ------------------------------------------
 CHM <- dsm - dtm
 names(CHM) <- "CHM"
 
-# calculate covariates from the dtm 
+# calculate topographic metrics from the dtm 
 slope = terrain(dtm, v = 'slope')
 aspect = terrain(dtm, v = 'aspect')
 TRI = terrain(dtm, v = 'TRIrmsd')
@@ -84,23 +85,23 @@ rough = terrain(dtm, v = "roughness")
 names(rough) <- "rough"
 
 
-# label: build-cube for LiDAR data
-
+# build-cube for LiDAR data
 lidar_cube <- c(dtm, aspect, slope, TRI, rough, CHM)
 
-#export lidar cube
-writeRaster(lidar_cube, filename = "/raid/home/bp424/Documents/MTHM603/Data/lidar_cube.tif")
-
-
 # combine all layers from S2 and LiDAR ------------------------------------
+
+#first ensure both cubes have the same resolution 
 lidar_cube_r <- project(lidar_cube, kat_planet)
 
-
+#combine Sentinel 2 and Lidar Data
 comb_dat <- c(kat_planet, lidar_cube_r)
 
+#export file, so that the combined raster file can be used in other analyses 
 writeRaster(comb_dat, filename = "/raid/home/bp424/Documents/MTHM603/Data/comb_cube.tif")
 
+#convert to data table 
 comb_df <- as.data.frame(cube, xy=TRUE) %>%
   tidyr::drop_na()
 
+#export data table so it can be used in other analyses 
 write.csv(comb_df, file = "/raid/home/bp424/Documents/MTHM603/Data/final_df.csv", row.names = FALSE)

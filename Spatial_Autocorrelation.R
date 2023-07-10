@@ -1,8 +1,5 @@
 
 # load in packages --------------------------------------------------------
-
-
-
 library(geoR)
 library(gstat)
 library(raster)
@@ -10,23 +7,31 @@ library(sf)
 library(spdep)
 library(sp)
 library(sfExtras)
-cube <- rast(file.path(data_path,"comb_cube.tif"))
-cube
 
-CHM <- df$CHM
-CHM
+# load in required datafiles ----------------------------------------------
+dtm <- rast(file.path(data_path,"Original-DEMS/katingan_DEMS/katingan_DTM.tif"))
+dsm <- rast(file.path(data_path,"Original-DEMS/katingan_DEMS/katingan_DSM.tif"))
+CHM <- dsm - dtm
+names(CHM) <- "CHM"
 
+# change resolution of CHM ------------------------------------------------
+# Change the resolution to 100x100 meters
+CHM_100 <- aggregate(CHM, fact = 100)
 
+CHM_100
+
+library(sp)
 # Convert the CHM raster to a spatial points data frame
-chm_points <- as.data.frame(cube$CHM, xy = TRUE)
-chm_points
-library(geoR)
+CHM_points <- as.data.frame(CHM_100, xy = TRUE)
 
+vgm1 <- variogram(log(CHM)~1, data = CHM_points)
 
-subset_points <- chm_points[sample(nrow(chm_points), 100000), ]
-variogram_model <- variog(coords = subset_points[, 1:2], data = subset_points$CHM)
+variogram_model <- variog(coords = CHM_points[, 1:2], data = CHM_points$CHM)
 
+v <- variogram(log(C) ~ 1, data = CHM_points)
 
+v.fit = fit.variogram(v, vgm(1, "Sph", 900, 1))
+v.fit
 # Plot the variogram to visualize the autocorrelation structure
 plot(variogram_model)
 
