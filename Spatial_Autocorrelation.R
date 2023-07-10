@@ -2,51 +2,49 @@
 # load in packages --------------------------------------------------------
 library(geoR)
 library(gstat)
-library(raster)
+library(terra)
 library(sf)
 library(spdep)
 library(sp)
 library(sfExtras)
+library(tidyverse)
 
 # load in required datafiles ----------------------------------------------
+data_path <- "/raid/home/bp424/Documents/MTHM603/Data"
 dtm <- rast(file.path(data_path,"Original-DEMS/katingan_DEMS/katingan_DTM.tif"))
 dsm <- rast(file.path(data_path,"Original-DEMS/katingan_DEMS/katingan_DSM.tif"))
 CHM <- dsm - dtm
 names(CHM) <- "CHM"
 
-# change resolution of CHM ------------------------------------------------
+# Pre-process CHM  ------------------------------------------------
 # Change the resolution to 100x100 meters
 CHM_100 <- aggregate(CHM, fact = 100)
 
-CHM_100
-
-library(sp)
 # Convert the CHM raster to a spatial points data frame
 CHM_points <- as.data.frame(CHM_100, xy = TRUE)
+coordinates(CHM_points) <- ~x + y
 
-vgm1 <- variogram(log(CHM)~1, data = CHM_points)
+# Create Variogram --------------------------------------------------------
 
-variogram_model <- variog(coords = CHM_points[, 1:2], data = CHM_points$CHM)
+# Create variogram model
+variogram_model <- variogram(CHM ~ 1, data = CHM_points)
 
-v <- variogram(log(C) ~ 1, data = CHM_points)
-
-v.fit = fit.variogram(v, vgm(1, "Sph", 900, 1))
-v.fit
 # Plot the variogram to visualize the autocorrelation structure
-plot(variogram_model)
+plot(variogram_model, xlim = c(0, 10000), ylim = c(0, 60))
 
-# Convert the CHM raster to a spatial points data frame
-chm_points <- as.data.frame(cube$CHM, xy = TRUE)
-#Subset the points to a random sample of 10,000 points
-subset_points <- chm_points[sample(nrow(chm_points), 100000), ]
-library(spdep)
+
+
+# Check spatial correlation using Moran's I -------------------------------
+
+
 # Create a spatial weights matrix
-coords <- chm_points[, 1:2]
-weights <- dnearneigh(coords, 0, 1000)
+CHM_points
+coords <- CHM_points[, 1:2]
+weights <- dnearneigh(coords, 0, 8000)
 listw <- nb2listw(weights)
 
 # Perform Moran's I analysis
-moran_result <- moran.test(cube$CHM, listw)
+moran_result <- moran.test(CHM_points$CHM, listw)
 
 # Check the Moran's I test results
 moran_result
