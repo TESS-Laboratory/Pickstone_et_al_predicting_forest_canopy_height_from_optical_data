@@ -1,11 +1,14 @@
 library(mlr3)
 library(mlr3tuning)
 library(mlr3learners)
+library(mlr3mbo)
 library(mlr3spatiotempcv)
 library(mlr3fselect)
 library(ranger)
 library(tidyverse)
 library(terra)
+library(ggpmisc)
+library(progressr)
 
 library(rlang)
 
@@ -20,7 +23,7 @@ df <- read_csv(file.path(data_path, "final_df.csv"))
 # Define your regression task with spatial-temporal components
 task <- mlr3spatiotempcv::TaskRegrST$new(
   id = "kat_base_CHM",
-  backend = train_d,
+  backend = df,
   target = "CHM",
   coordinate_names = c("x", "y"),
   extra_args = list(
@@ -48,16 +51,9 @@ resample <- mlr3::rsmp("repeated_spcv_coords", folds = 3, repeats = 1)
 
 # set up a pipeline learner -----------------------------------------------
 
-lrn_filt <- 
-  po("subsample", frac = 0.5) %>>%
-  po("filter", filter = flt("importance", learner = learner), filter.frac = to_tune(0.1,0.3))%>>%
-  learner
-
-combined.lrnr <- as_learner(lrn_filt)
-
 afs=auto_tuner( 
   tuner=tnr("random_search"), 
-  learner=combined.lrnr, 
+  learner=learner, 
   resampling=resample, 
   measure=measure, 
   term_evals=10)
@@ -69,3 +65,4 @@ future::plan("multisession", workers = 10)
 progressr::with_progress(expr = {
   afs$train(task)
 })
+

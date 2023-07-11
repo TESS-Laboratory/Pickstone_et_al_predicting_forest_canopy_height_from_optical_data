@@ -16,7 +16,6 @@ library(GGally)
 library(gt)
 library(blockCV)
 
-
 # set seed ----------------------------------------------------------------
 
 set.seed(1234)
@@ -25,6 +24,7 @@ set.seed(1234)
 data_path <- "/raid/home/bp424/Documents/MTHM603/Data"
 cube <- rast(file.path(data_path,"comb_cube.tif"))
 df <- read_csv(file.path(data_path, "final_df.csv"))
+
 
 # find optimal number of clusters -----------------------------------------
 # Exclude x and y from the dataframe
@@ -42,58 +42,21 @@ wss <- sapply(k_values, function(k) {
 plot(k_values, wss, type = "b", pch = 19, frame = FALSE, xlab = "Number of Clusters (k)", ylab = "Total Within-Cluster Sum of Squares (wss)")
 
 
+# generate a task --------------------------------------------------------
 
-# generate a task ---------------------------------------------------------
-task = mlr3spatiotempcv::TaskRegrST$new(
+
+# Create a spatiotemporal task using mlr3spatiotempcv
+task <- TaskRegrST$new(
   id = "kat_base_CHM", 
-  backend= df,
+  backend = df,  
   target = "CHM",
-  coordinate_names= c("x", "y"), 
+  coordinate_names = c("x", "y"), 
   extra_args = list(
     coords_as_features = FALSE, 
-    crs= terra::crs(cube))
+    crs = terra::crs(cube)  
+  )
 )
 
-
-
-
-# define a resampling plan ------------------------------------------------
-# Define the spcv plans
-spcv_plan1 <- mlr3::rsmp("cv", folds = 10)
-spcv_plan2 <- mlr3::rsmp("repeated_spcv_coords", folds = 3, repeats = 2)
-spcv_plan3 <- mlr3::rsmp("spcv_coords", folds = 3)
-spcv_plan4 <- mlr3::rsmp("spcv_disc", folds = 3, radius = 50)
-spcv_plan4 <- mlr3::rsmp("spcv_block", folds = 3, range = 100)
-
-
-# Create an empty list to store the benchmark results
-bmr_list <- list()
-
-# Iterate over each spcv plan
-for (spcv_plan in list(spcv_plan1, spcv_plan2, spcv_plan3, spcv_plan4, spcv_plan5)) {
-  # Create the benchmark grid with the spcv plan and regr.lm learner
-  design <- benchmark_grid(task, lrn("regr.lm"), spcv_plan)
-  
-  # Run the benchmark
-  bmr <- benchmark(design)
-  
-  # Store the benchmark result in the list
-  bmr_list[[length(bmr_list) + 1]] <- bmr
-}
-
-# Aggregate the results for each spcv plan
-aggr_list <- lapply(bmr_list, function(bmr) bmr$aggregate(measures = c(msr("regr.rmse"), msr("regr.mse"), msr("regr.rsq"))))
-
-# Display the results using the gt package for each spcv plan
-for (i in seq_along(aggr_list)) {
-  aggr <- aggr_list[[i]]
-  cat("Results for SPCV Plan", i, ":\n")
-  gt(aggr[, 4:9])
-  cat("\n")
-}
-
-
-# complete multiple linear regression -------------------------------------
 
 # Define the learner and resampling plan
 
@@ -141,8 +104,6 @@ metric_scores <- resample_lm$aggregate(measure = c(
 
 # visualise ---------------------------------------------------------------
 
-
-
 resample_lm$prediction() %>%
   ggplot() +
   aes(x = response, y = truth) +
@@ -156,4 +117,6 @@ resample_lm$prediction() %>%
   geom_abline(slope = 1) +
   theme_light() +
   labs(x = "Predicted Canopy Height (m)", y = "Observed Canopy Height (m)")
+
+
 

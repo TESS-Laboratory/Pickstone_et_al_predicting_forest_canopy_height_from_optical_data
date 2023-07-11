@@ -29,9 +29,9 @@ dsm <- rast(file.path(data_path,"Original-DEMS/katingan_DEMS/katingan_DSM.tif"))
 
 # Crop the data so they have the same extent ------------------------------
 #this will also save computing time for the calculations 
+kat_planet <- crop(kat_planet, dtm)
 dtm <- crop(dtm, kat_planet)
 dsm <- crop(dsm, kat_planet)
-kat_planet <- crop(kat_planet, dtm)
 
 
 #scale down the 8 existing bands
@@ -100,8 +100,10 @@ comb_dat <- c(kat_planet, lidar_cube_r)
 writeRaster(comb_dat, filename = "/raid/home/bp424/Documents/MTHM603/Data/comb_cube.tif")
 
 #convert to data table 
-comb_df <- as.data.frame(cube, xy=TRUE) %>%
+comb_df <- as.data.frame(comb_dat, xy=TRUE) %>%
   tidyr::drop_na()
 
 #export data table so it can be used in other analyses 
 write.csv(comb_df, file = "/raid/home/bp424/Documents/MTHM603/Data/final_df.csv", row.names = FALSE)
+
+
