@@ -26,22 +26,6 @@ cube <- rast(file.path(data_path,"comb_cube.tif"))
 df <- read_csv(file.path(data_path, "final_df.csv"))
 
 
-# find optimal number of clusters -----------------------------------------
-# Exclude x and y from the dataframe
-data <- df[, !(colnames(df) %in% c("x", "y"))]
-
-# Define the range of cluster numbers to evaluate
-k_values <- 2:7
-
-# Perform k-means clustering for each k value and calculate total within-cluster sum of squares (wss)
-wss <- sapply(k_values, function(k) {
-  kmeans(data, centers = k)$tot.withinss
-})
-
-# Plot the elbow curve
-plot(k_values, wss, type = "b", pch = 19, frame = FALSE, xlab = "Number of Clusters (k)", ylab = "Total Within-Cluster Sum of Squares (wss)")
-
-
 # generate a task --------------------------------------------------------
 
 
@@ -56,6 +40,42 @@ task <- TaskRegrST$new(
     crs = terra::crs(cube)  
   )
 )
+
+library(mlr3)
+library(mlr3learners)
+library(mlr3spatiotempcv)
+
+# Define your model (replace 'regr.lm' with the appropriate learner)
+learner <- lrn("regr.lm")
+
+# Create a spatiotemporal task using mlr3spatiotempcv (replace with your appropriate data and settings)
+task <- TaskRegrST$new(
+  id = "kat_base_CHM", 
+  backend = df,  # Replace 'df' with your appropriate data
+  target = "CHM",
+  coordinate_names = c("x", "y"), 
+  extra_args = list(
+    coords_as_features = FALSE, 
+    crs = terra::crs(cube)  # Replace 'cube' with your appropriate spatial data object
+  )
+)
+
+# Define a range of fold values to test
+fold_values <- c(2, 3, 4, 5, 6, 7, 10)
+
+# Perform spatiotemporal cross-validation with different fold values
+for (fold in fold_values) {
+  # Define a spatiotemporal resampling strategy with the current fold value
+  resampling <- mlr3::rsmp("spcv_coords", fold)
+  
+  # Perform spatiotemporal cross-validation and compute performance measures
+  res <- resample(task, learner, resampling)
+  
+  # Extract and print the average performance measure
+  performance <- mean(res$aggregate(msr("regr.rsq")))
+  
+  cat("Number of Folds:", fold, "Performance:", performance, "\n")
+}
 
 
 # Define the learner and resampling plan
@@ -117,6 +137,3 @@ resample_lm$prediction() %>%
   geom_abline(slope = 1) +
   theme_light() +
   labs(x = "Predicted Canopy Height (m)", y = "Observed Canopy Height (m)")
-
-
-

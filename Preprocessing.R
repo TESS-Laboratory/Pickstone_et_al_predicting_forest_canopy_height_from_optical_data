@@ -26,7 +26,7 @@ print(names(kat_planet))
 dtm <- rast(file.path(data_path,"Original-DEMS/katingan_DEMS/katingan_DTM.tif"))
 dsm <- rast(file.path(data_path,"Original-DEMS/katingan_DEMS/katingan_DSM.tif"))
 
-
+dsm
 # Crop the data so they have the same extent ------------------------------
 #this will also save computing time for the calculations 
 kat_planet <- crop(kat_planet, dtm)
@@ -107,3 +107,9 @@ comb_df <- as.data.frame(comb_dat, xy=TRUE) %>%
 write.csv(comb_df, file = "/raid/home/bp424/Documents/MTHM603/Data/final_df.csv", row.names = FALSE)
 
 
+#create a histogram of the canopy heights
+heights <- df$CHM
+min(heights)
+max(heights)
+# Create a histogram
+hist(heights, breaks = 10, main = "Frequency Histogram of CHM Heights", xlab = "Height", ylab = "Frequency")
