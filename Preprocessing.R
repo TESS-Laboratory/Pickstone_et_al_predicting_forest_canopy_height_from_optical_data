@@ -12,6 +12,7 @@ library(sf)
 library(raster)
 library(dplyr)
 
+
 # Import Planet Labs Data -------------------------------------------------
 
 #data_path <- "/Users/bri/Library/CloudStorage/OneDrive-UniversityofExeter/University/Dissertation/Data"
@@ -100,16 +101,67 @@ comb_dat <- c(kat_planet, lidar_cube_r)
 writeRaster(comb_dat, filename = "/raid/home/bp424/Documents/MTHM603/Data/comb_cube.tif")
 
 #convert to data table 
-comb_df <- as.data.frame(comb_dat, xy=TRUE) %>%
+df <- as.data.frame(comb_dat, xy=TRUE) %>%
   tidyr::drop_na()
 
 #export data table so it can be used in other analyses 
-write.csv(comb_df, file = "/raid/home/bp424/Documents/MTHM603/Data/final_df.csv", row.names = FALSE)
+write.csv(df, file = "/raid/home/bp424/Documents/MTHM603/Data/final_df.csv", row.names = FALSE)
 
 
-#create a histogram of the canopy heights
+# resample ----------------------------------------------------------------
+
+
+#resample to 10m resolution 
+
+comb_dat_10m <- aggregate(comb_dat, fact = 10)
+comb_dat_10m <- disagg(comb_dat_10m, fact = 3)
+#export file, so that the combined raster file can be used in other analyses 
+writeRaster(comb_dat_10m, filename = "/raid/home/bp424/Documents/MTHM603/Data/comb_cube_10m.tif")
+
+df_10m <- as.data.frame(comb_dat_10m, xy=TRUE) %>%
+  tidyr::drop_na()
+
+write.csv(df_10m, file = "/raid/home/bp424/Documents/MTHM603/Data/final_df_10m.csv", row.names = FALSE)
+
+#resample to 20m resolution
+comb_dat_20m <- aggregate(comb_dat_10m, fact = 2)
+
+#export file, so that the combined raster file can be used in other analyses 
+writeRaster(comb_dat_20m, filename = "/raid/home/bp424/Documents/MTHM603/Data/comb_cube_20m.tif")
+
+df_20m <- as.data.frame(comb_dat_20m, xy=TRUE) %>%
+  tidyr::drop_na()
+
+write.csv(df_20m, file = "/raid/home/bp424/Documents/MTHM603/Data/final_df_20m.csv", row.names = FALSE)
+
+# Create a histogram of canopy heights ------------------------------------
 heights <- df$CHM
-min(heights)
-max(heights)
+
 # Create a histogram
-hist(heights, breaks = 10, main = "Frequency Histogram of CHM Heights", xlab = "Height", ylab = "Frequency")
+# Set the font family to Times New Roman
+file_name <- "histogram.png"
+dpi <- 600
+
+# Create the PNG device with high resolution
+png(file = file_name, width = 8, height = 6, units = "in", res = dpi)
+
+# Set the plot margins and mgp values
+par(mar = c(5, 6, 2, 1))  # Increase the left margin value as needed
+par(mgp = c(3, 1, 0))  # Adjust the mgp values as needed
+
+# Plot the histogram with desired settings and increased font size
+par(family = "Times New Roman", cex.lab = 1.5)  # Adjust the cex.lab value for font size
+hist(heights, breaks = 10, xlab = "True Canopy Height (m)", 
+     ylab = expression(Frequency ~ "x" ~ 10^6),
+     yaxt = "n", main = "")
+
+# Define the desired tick positions and labels
+tick_positions <- c(0, 1e6, 2e6, 3e6, 4e6)
+
+tick_labels <- c(0, 1, 2, 3, 4)
+
+# Modify the y-axis ticks labels
+axis(side = 2, at = tick_positions, labels = tick_labels)
+
+# Close the PNG device and save the image
+dev.off()

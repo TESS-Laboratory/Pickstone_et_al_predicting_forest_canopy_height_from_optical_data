@@ -21,7 +21,7 @@ df <- read_csv(file.path(data_path, "final_df.csv"))
 # Define your regression task with spatial-temporal components
 task <- mlr3spatiotempcv::TaskRegrST$new(
   id = "kat_base_CHM",
-  backend = df,
+  backend = df_10,
   target = "CHM",
   coordinate_names = c("x", "y"),
   extra_args = list(
@@ -31,34 +31,41 @@ task <- mlr3spatiotempcv::TaskRegrST$new(
 )
 
 #Define a resampling plan
-resample <- mlr3::rsmp("repeated_spcv_coords", folds = 3, repeats = 1)
-lrn_rf <- mlr3::lrn("regr.ranger")
+resample <- mlr3::rsmp("repeated_spcv_coords", folds = 3, repeats = 2)
+lrn_rf <- mlr3::lrn("regr.ranger", importance = "impurity", oob.error = TRUE)
 
 
-# define the random forest learner ----------------------------------------
-lrn_tune <- mlr3::lrn("regr.ranger", 
-                      mtry = to_tune(lower = 4, upper = 10),
-                      num.trees = to_tune(lower = 100, upper = 1000),
-                      sample.fraction = to_tune(lower = 0.5, upper = 0.8),
-                      max.depth = to_tune(lower = 20, upper = 100),
-                      min.node.size = to_tune(lower = 20, upper = 100))
 
+# define the search space  ------------------------------------------------
 
-lrnr_graph <-
-  po("subsample", frac = 0.01) %>>%
-  po("filter", filter =flt("importance",learner = lrn_rf), filter.frac=to_tune(0.1,0.3))%>>%
-  lrn_tune
+search_space = ps(
+  mtry = p_int(lower = 4, upper = 20),
+  num.trees = p_int(lower = 500, upper = 2000),
+  sample.fraction = p_dbl(lower = 0.001, upper = 0.02),
+  max.depth = p_int(lower = 20, upper = 100),
+  min.node.size = p_int(lower = 20, upper = 100)
+)
 
-plot(lrnr_graph)
+evals100 = trm("evals", n_evals = 100)
+measure = msr("regr.rsq")
 
-sub_samp_lrnr <- mlr3::as_learner(lrnr_graph)
+instance = TuningInstanceSingleCrit$new(
+  task = task,
+  learner = lrn_rf,
+  resampling = resample,
+  measure = measure,
+  search_space = search_space,
+  terminator = evals100
+)
 
-afs=auto_fselector( 
-  fselector=fs("random_search"), 
-  learner=sub_samp_lrnr, 
-  resampling=resample, 
-  measure=msr("regr.rsq"), 
-  term_evals=10)
+tuner = tnr("grid_search", resolution = 5)
+
+op_model <- tuner$optimize(instance)
+saveRDS(op_model, file = "op_model.rds")
+
+importance <- importance(op_model$result$learner, task = task, method = "impurity")
+plot(importance)
+
 
 # Optimize feature subset and fit final model
 future::plan("multisession", workers = 10)
@@ -103,3 +110,88 @@ resample_rf$prediction() %>%
   geom_abline(slope = 1) +
   theme_light() +
   labs(x = "Predicted Canopy Height (m)", y = "Observed Canopy Height (m)")
+
+
+
+
+# a different attempt of RF -----------------------------------------------
+
+
+# Define your regression task with spatial-temporal components
+task <- mlr3spatiotempcv::TaskRegrST$new(
+  id = "kat_base_CHM",
+  backend = df_20,
+  target = "CHM",
+  coordinate_names = c("x", "y"),
+  extra_args = list(
+    coords_as_features = FALSE,
+    crs = terra::crs(cube)
+  )
+)
+
+#Define a resampling plan
+resample <- mlr3::rsmp("repeated_spcv_coords", folds = 3, repeats = 2)
+lrn_rf <- mlr3::lrn("regr.ranger")
+
+
+# define the random forest learner ----------------------------------------
+
+
+lrnr_graph <-
+  po("subsample", frac = 0.6) %>>%
+  mlr3::lrn("regr.ranger")
+
+plot(lrnr_graph)
+
+sub_samp_lrnr <- mlr3::as_learner(lrnr_graph)
+
+afs=auto_fselector( 
+  fselector=fs("random_search"), 
+  learner=sub_samp_lrnr, 
+  resampling=resample, 
+  measure=msr("regr.rsq"), 
+  term_evals=10)
+
+# Optimize feature subset and fit final model
+future::plan("multisession", workers = 10)
+progressr::with_progress(expr = {
+  afs$train(task)
+})
+
+# resample_rf ------------------------------------------------------------
+
+resample_rf <- progressr::with_progress(expr ={
+  mlr3::resample(
+    task = task,
+    learner = afs$learner,
+    resampling = resample, 
+    store_models = FALSE,
+    encapsulate = "evaluate"
+  )
+})
+
+# evaluate ----------------------------------------------------------------
+
+metric_scores <- resample_rf$aggregate(measure = c(
+  mlr3::msr("regr.bias"),
+  mlr3::msr("regr.rmse"),
+  mlr3::msr("regr.rsq"),
+  mlr3::msr("regr.mae")))
+
+metric_scores
+# visualise ---------------------------------------------------------------
+
+resample_rf$prediction() %>%
+  ggplot() +
+  aes(x = response, y = truth) +
+  geom_bin_2d(binwidth = 0.3) +
+  scale_fill_viridis_c(
+    trans = scales::yj_trans(0.1),
+    option = "G",
+    direction = -1,
+    breaks = c(0, 5000, 20000, 50000)
+  ) +
+  geom_abline(slope = 1) +
+  theme_light() +
+  labs(x = "Predicted Canopy Height (m)", y = "Observed Canopy Height (m)")
+

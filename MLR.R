@@ -32,7 +32,7 @@ df <- read_csv(file.path(data_path, "final_df.csv"))
 # Create a spatiotemporal task using mlr3spatiotempcv
 task <- TaskRegrST$new(
   id = "kat_base_CHM", 
-  backend = df,  
+  backend = df_10,  
   target = "CHM",
   coordinate_names = c("x", "y"), 
   extra_args = list(
@@ -41,46 +41,12 @@ task <- TaskRegrST$new(
   )
 )
 
-library(mlr3)
-library(mlr3learners)
-library(mlr3spatiotempcv)
-
-# Define your model (replace 'regr.lm' with the appropriate learner)
+# Define your model
 learner <- lrn("regr.lm")
-
-# Create a spatiotemporal task using mlr3spatiotempcv (replace with your appropriate data and settings)
-task <- TaskRegrST$new(
-  id = "kat_base_CHM", 
-  backend = df,  # Replace 'df' with your appropriate data
-  target = "CHM",
-  coordinate_names = c("x", "y"), 
-  extra_args = list(
-    coords_as_features = FALSE, 
-    crs = terra::crs(cube)  # Replace 'cube' with your appropriate spatial data object
-  )
-)
-
-# Define a range of fold values to test
-fold_values <- c(2, 3, 4, 5, 6, 7, 10)
-
-# Perform spatiotemporal cross-validation with different fold values
-for (fold in fold_values) {
-  # Define a spatiotemporal resampling strategy with the current fold value
-  resampling <- mlr3::rsmp("spcv_coords", fold)
-  
-  # Perform spatiotemporal cross-validation and compute performance measures
-  res <- resample(task, learner, resampling)
-  
-  # Extract and print the average performance measure
-  performance <- mean(res$aggregate(msr("regr.rsq")))
-  
-  cat("Number of Folds:", fold, "Performance:", performance, "\n")
-}
-
 
 # Define the learner and resampling plan
 
-resample <- mlr3::rsmp("repeated_spcv_coords", folds = 3, repeats = 2)
+resample <- mlr3::rsmp("repeated_spcv_coords", folds = 3, repeats = 10)
 measure <- msr("regr.rsq")
 
 # Define the regr.lm learner
@@ -92,7 +58,7 @@ afs=auto_fselector(
   learner=learner, 
   resampling=resample, 
   measure=measure, 
-  term_evals=10)
+  term_evals=100)
   #subset_size = 0.3)) 
 
 #optimizefeaturesubsetandfitfinalmodel 
@@ -119,8 +85,9 @@ metric_scores <- resample_lm$aggregate(measure = c(
   mlr3::msr("regr.bias"),
   mlr3::msr("regr.rmse"),
   mlr3::msr("regr.rsq"),
-  mlr3::msr("regr.mse")))
+  mlr3::msr("regr.mae")))
 
+metric_scores
 
 # visualise ---------------------------------------------------------------
 

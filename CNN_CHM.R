@@ -84,16 +84,76 @@ lrn$param_set$values$layer_units = 12
 # an alternative option  --------------------------------------------------
 
 library(keras)
-model = keras_model_sequential() %>%
-  layer_dense(units = 12L, input_shape = 10L, activation = "relu") %>%
-  layer_dense(units = 12L, activation = "relu") %>%
-  layer_dense(units = 1L, activation = "linear") %>%
-  compile(optimizer = optimizer_sgd(),
-          loss = "mean_squared_error",
-          metrics = "mean_squared_error")
+cnn_model <- keras_model_sequential() %>%
+  layer_conv_2d(filters = 32, kernel_size = c(3,3), activation = 'relu', input_shape = input_shape) %>% 
+  layer_max_pooling_2d(pool_size = c(2, 2)) %>% 
+  layer_conv_2d(filters = 64, kernel_size = c(3,3), activation = 'relu') %>% 
+  layer_max_pooling_2d(pool_size = c(2, 2)) %>% 
+  layer_dropout(rate = 0.25) %>% 
+  layer_flatten() %>% 
+  layer_dense(units = 128, activation = 'relu') %>% 
+  layer_dropout(rate = 0.5) %>% 
+  layer_dense(units = num_classes, activation = 'softmax')
 # Create the learner
 
 learner <- LearnerRegrKeras$new()
 learner$param_set$values$model = model
 learner$train(task)
+
+
+
+# another attempt ---------------------------------------------------------
+
+set.seed(123)
+
+indexes = createDataPartition(boston$medv, p = .85, list = F)
+
+train = boston[indexes,]
+test = boston[-indexes,]
+
+xtrain = as.matrix(train[,-14])
+ytrain = as.matrix(train[,14])
+xtest = as.matrix(test[,-14])
+ytest = as.matrix(test[, 14])
+
+#Next, we'll reshape the x input data by adding another one-dimension.
+
+xtrain = array(xtrain, dim = c(nrow(xtrain), 13, 1))
+xtest = array(xtest, dim = c(nrow(xtest), 13, 1))
+
+dim(xtrain)
+dim(xtest)
+
+#Here, we can extract the input dimension for the keras model.
+
+in_dim = c(dim(xtrain)[2:3])
+print(in_dim)
+
+model = keras_model_sequential() %>%
+  layer_conv_1d(filters = 64, kernel_size = 2,
+                input_shape = in_dim, activation = "relu") %>%
+  layer_flatten() %>%
+  layer_dense(units = 32, activation = "relu") %>%
+  layer_dense(units = 1, activation = "linear")
+
+model %>% compile(
+  loss = "mse",
+  optimizer = "adam")
+
+model %>% summary()
+
+#Next, we 'll fit the model with train data.
+
+model %>% fit(xtrain, ytrain, epochs = 100, batch_size=16, verbose = 0)
+scores = model %>% evaluate(xtrain, ytrain, verbose = 0)
+print(scores)
+
+#Now we can predict the test data with the trained model.
+
+ypred = model %>% predict(xtest)
+
+#We'll check the accuracy of prediction through the RMSE metrics.
+
+cat("RMSE:", RMSE(ytest, ypred))
+
 

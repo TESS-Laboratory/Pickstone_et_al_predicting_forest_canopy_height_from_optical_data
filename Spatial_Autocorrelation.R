@@ -29,9 +29,21 @@ coordinates(CHM_points) <- ~x + y
 variogram_model <- variogram(CHM ~ 1, data = CHM_points)
 
 # Plot the variogram to visualize the autocorrelation structure
-plot(variogram_model, xlim = c(0, 10000), ylim = c(0, 60), 
+file_name <- "variogram.png"
+dpi <- 600
+
+# Create the PNG device with high resolution
+png(file = file_name, width = 8, height = 6, units = "in", res = dpi)
+
+# Plot the variogram to visualize the autocorrelation structure
+# Set the font family to Times New Roman
+par(family = "Times New Roman", cex.lab = 1.5)
+
+# Plot the variogram model without axes
+plot(variogram_model, xlim = c(0, 10000), ylim = c(0, 60),
      xlab = "Distance (m)", ylab = "Semi-variance")
 
+dev.off()
 
 # Check spatial correlation using Moran's I -------------------------------
 

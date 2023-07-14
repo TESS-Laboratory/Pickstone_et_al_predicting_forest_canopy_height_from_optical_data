@@ -27,34 +27,24 @@ names(CHM) <- "CHM"
 CHM.plot <- ggplot() + 
   theme_bw() +
   geom_spatraster(data = CHM)+
+  theme(axis.text = element_text(size = 6, family = "Times New Roman"), 
+        legend.text = element_text(size = 6, family = "Times New Roman"), 
+        legend.title = element_text(size = 6, family = "Times New Roman"))+
   scale_fill_gradientn(
     name = "Canopy Height (m)",
     colors = viridisLite::turbo(n = 100),
     na.value = 'transparent',
-    limits = c(0, 55)
-  ) 
+    limits = c(0, 55))
+
 CHM.plot
 
+ggsave(file="CHM_plot.png", dpi = 600)
 # Sentinel 2 Plot ---------------------------------------------------------
 
 
-#change coordinate system so that it matches the Canopy Height Plot, and 
-#the coordinates within the introduction (EPSG:4326)
-
-# Define the target CRS (WGS84, EPSG:4326)
-target_crs <- "EPSG:4326"
-
-# Project the raster to the target CRS
-projected_cube <- project(cube, target_crs)
-
-#convert to data table 
-proj_df <- as.data.frame(projected_cube, xy=TRUE) %>%
-  tidyr::drop_na()
-
-
 # create a plot of Sen-2  -------------------------------------------------
-S2_to_rgb_df <- function(proj_df, .min=0.001, .max=1.2){
-  as.data.frame(proj_df, xy=TRUE) |>
+S2_to_rgb_df <- function(df, .min=0.001, .max=1.2){
+  as.data.frame(df, xy=TRUE) |>
     mutate(red = case_when(red<.min ~ .min,
                            red>.max ~ .max,
                            TRUE ~ red),
@@ -80,14 +70,19 @@ rgb_plot <- function(.x){
     tidyr::drop_na()
   
   ggplot(data=S2_df, aes(x=x, y=y, fill=rgb(red,green,blue))) +
+    theme_bw()+
     geom_raster() +
+    theme(axis.text = element_text(size = 6, family = "Times New Roman"), 
+          legend.text = element_text(size = 6, family = "Times New Roman"), 
+          legend.title = element_text(size = 6, family = "Times New Roman"), 
+          axis.title.x = element_blank(), 
+          axis.title.y = element_blank())+
     scale_fill_identity() +
-    theme_bw() +
-    theme(
-      axis.title.x=element_blank(),
-      axis.title.y=element_blank()) +
-    coord_fixed()
+    coord_fixed()+
+    coord_sf(crs = 4326)
 }
 
 
 rgb_plot(projected_cube)
+
+ggsave(file="S2_plot.png", dpi = 600)
