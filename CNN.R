@@ -9,7 +9,8 @@ library(terra)
 library(dplyr)
 library(tidyverse)
 library(ggpmisc)
-
+library(keras)
+library(tensorflow)
 remotes::install_github("mlr-org/mlr3keras")
 reticulate::install_miniconda()
 reticulate::conda_create(
@@ -52,12 +53,18 @@ task <- mlr3spatiotempcv::TaskRegrST$new(
     crs = terra::crs(cube)
   )
 )
-architecture <- mlr3keras::keras_model_sequential() %>%
+model <- keras_model_sequential()
+parchitecture <- mlr3keras::keras_model_sequential() %>%
     layer_dense(units = 64, activation = "relu", input_shape = 27) %>%
     layer_dense(units = 32, activation = "relu") %>%
     layer_dense(units = 1)
-  
+library(reticulate)
+library(keras)
+py_config()
 
+
+virtualenv_create("myenv")
+install_keras(method="virtualenv", envname="myenv")
 
 learner <- mlr_learners$get("regr.keras", model = architecture)
 resample <- mlr3::rsmp("repeated_spcv_coords", folds = 3, repeats = 2)

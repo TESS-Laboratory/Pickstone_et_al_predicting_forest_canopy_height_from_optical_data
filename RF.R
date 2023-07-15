@@ -16,7 +16,8 @@ set.seed(1234)
 data_path <- "/raid/home/bp424/Documents/MTHM603/Data"
 cube <- rast(file.path(data_path,"comb_cube.tif"))
 df <- read_csv(file.path(data_path, "final_df.csv"))
-
+df_10 <- read_csv(file.path(data_path, "final_df_10m.csv"))
+df_20 <- read_csv(file.path(data_path, "final_df_20m.csv"))
 
 # Define your regression task with spatial-temporal components
 task <- mlr3spatiotempcv::TaskRegrST$new(
@@ -29,6 +30,23 @@ task <- mlr3spatiotempcv::TaskRegrST$new(
     crs = terra::crs(cube)
   )
 )
+
+learner = lrn("regr.ranger", importance = "impurity")
+
+future::plan("multisession", workers = 10)
+
+learner$train(task)
+
+
+# Extract feature importance values
+feature_importance <- importance(learner)
+
+# Plot the feature importance graph
+plot(feature_importance)
+
+# Train the learner using resampling
+
+# Get importance values
 
 #Define a resampling plan
 resample <- mlr3::rsmp("repeated_spcv_coords", folds = 3, repeats = 2)
@@ -53,7 +71,7 @@ instance = TuningInstanceSingleCrit$new(
   task = task,
   learner = lrn_rf,
   resampling = resample,
-  measure = measure,
+  measure = msr("regr.rsq"),
   search_space = search_space,
   terminator = evals100
 )
