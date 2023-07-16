@@ -22,29 +22,7 @@ task <- mlr3spatiotempcv::TaskRegrST$new(
 )
 
 #create the resampling strategy for the train and test set 
-resample <- rsmp("repeated_spcv_coords", folds = 3, repeats = 1)
-
-# Create the autoplot with custom font and tilted x-axis labels
-autoplot(resample, task = task, fold_id = 1:1) +
-  theme(
-    text = element_text(size = 4, family = "Times New Roman"),
-    axis.text.x = element_text(angle = 45, hjust = 1)
-  )
-
-autoplot(resample, task = task, fold_id = 2:2) +
-  theme(
-    text = element_text(size = 4,family = "Times New Roman"),
-    axis.text.x = element_text(angle = 45, hjust = 1)
-  )
-
-autoplot(resample, task = task, fold_id = 3:3) +
-  theme(
-    text = element_text(size = 4,family = "Times New Roman"),
-    axis.text.x = element_text(angle = 45, hjust = 1)
-  )
-
-ggsave(file="Fold_3.png", dpi = 600)
-
+resample <- rsmp("repeated_spcv_coords", folds = 3, repeats = 2)
 
 lrn_ranger = lrn("regr.ranger", importance = "impurity")
 
@@ -71,11 +49,21 @@ importance_table$Names <- factor(
   levels = unique(importance_table$Names)
 )
 
+importance_table[grepl("katingan_DTM", Names), Names := "DTM"]
+
+
+importance_table
+
 # Create a bar plot with the original order
 ggplot(importance_table, aes(x = Names, y = Numbers)) +
+  theme_gray()+
   geom_bar(stat = "identity") +
-  xlab("Names") +
-  ylab("Numbers") +
-  ggtitle("Histogram of Importance") +
-  theme_minimal()
+  xlab("Importance Score") +
+  ylab("Features") +
+  theme(
+    text = element_text(size = 7,family = "Times New Roman"),
+    axis.text.x = element_text(angle = 45, hjust = 1))
+
+
+ggsave(file="feature_selection.png", dpi = 600)
 
