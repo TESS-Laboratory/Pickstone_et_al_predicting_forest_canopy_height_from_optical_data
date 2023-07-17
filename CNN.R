@@ -54,7 +54,8 @@ task <- mlr3spatiotempcv::TaskRegrST$new(
   )
 )
 model <- keras_model_sequential()
-parchitecture <- mlr3keras::keras_model_sequential() %>%
+
+architecture <- mlr3keras::keras_model_sequential() %>%
     layer_dense(units = 64, activation = "relu", input_shape = 27) %>%
     layer_dense(units = 32, activation = "relu") %>%
     layer_dense(units = 1)
