@@ -94,5 +94,44 @@ autoplot(resample, task = task, fold_id = 3:3) +
 
 ggsave(file="Fold_3.png", dpi = 600)
 
+# resample_lm ------------------------------------------------------------
+
+resample_lm <- progressr::with_progress(expr ={
+  mlr3::resample(
+    task = task,
+    learner = afs$learner,
+    resampling = resample, 
+    store_models = FALSE,
+    encapsulate = "evaluate"
+  )
+})
+
+# evaluate ----------------------------------------------------------------
+
+metric_scores <- resample_lm$aggregate(measure = c(
+  mlr3::msr("regr.bias"),
+  mlr3::msr("regr.rmse"),
+  mlr3::msr("regr.rsq"),
+  mlr3::msr("regr.mae")))
+
+metric_scores
+
+# visualise ---------------------------------------------------------------
+
+resample_lm$prediction() %>%
+  ggplot() +
+  aes(x = response, y = truth) +
+  geom_bin_2d(binwidth = 0.3) +
+  scale_fill_viridis_c(
+    trans = scales::yj_trans(0.1),
+    option = "G",
+    direction = -1,
+    breaks = c(0, 5000, 20000, 50000)
+  ) +
+  geom_abline(slope = 1) +
+  theme_light() +
+  labs(x = "Predicted Canopy Height (m)", y = "Observed Canopy Height (m)")
+
+
 
 

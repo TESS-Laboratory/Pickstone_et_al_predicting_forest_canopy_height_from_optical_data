@@ -15,6 +15,7 @@ library(mlr3viz)
 library(GGally)
 library(gt)
 library(blockCV)
+library(sf)
 
 # set seed ----------------------------------------------------------------
 
@@ -40,25 +41,31 @@ task <- TaskRegrST$new(
     crs = terra::crs(cube)  
   )
 )
+df_10
 
 # Define your model
 learner <- lrn("regr.lm")
 
 # Define the learner and resampling plan
 
-resample <- mlr3::rsmp("repeated_spcv_coords", folds = 3, repeats = 10)
+resample <- mlr3::rsmp("repeated_spcv_coords", folds = 3, repeats = 2)
+
 measure <- msr("regr.rsq")
 
-# Define the regr.lm learner
-learner <- lrn("regr.lm")
+filter = flt("correlation")
 
-#createautofselector 
+answer <- filter$calculate(task)
+answer
+
+head(as.data.table(answer))
+
+
 afs=auto_fselector( 
   fselector=fs("random_search"), 
   learner=learner, 
   resampling=resample, 
   measure=measure, 
-  term_evals=100)
+  term_evals=10)
   #subset_size = 0.3)) 
 
 #optimizefeaturesubsetandfitfinalmodel 
@@ -66,6 +73,8 @@ future::plan("multisession", workers = 10)
 progressr::with_progress(expr = {
   afs$train(task)
 })
+
+
 
 # resample_lm ------------------------------------------------------------
 

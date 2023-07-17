@@ -1,3 +1,4 @@
+library(mlr)
 library(mlr3)
 library(mlr3tuning)
 library(mlr3learners)
@@ -31,18 +32,15 @@ task <- mlr3spatiotempcv::TaskRegrST$new(
   )
 )
 
+spcv_plan <- mlr3::rsmp("repeated_spcv_coords", folds = 3, repeats=2)
+
 learner = lrn("regr.ranger", importance = "impurity")
 
-future::plan("multisession", workers = 10)
+design = benchmark_grid(task, learner, spcv_plan)
 
-learner$train(task)
+future::plan("multisession", workers = 10) # sets the number of cores to run on -  we have
+bmr = mlr3::benchmark(design)
 
-
-# Extract feature importance values
-feature_importance <- importance(learner)
-
-# Plot the feature importance graph
-plot(feature_importance)
 
 # Train the learner using resampling
 
@@ -50,9 +48,6 @@ plot(feature_importance)
 
 #Define a resampling plan
 resample <- mlr3::rsmp("repeated_spcv_coords", folds = 3, repeats = 2)
-lrn_rf <- mlr3::lrn("regr.ranger", importance = "impurity", oob.error = TRUE)
-
-
 
 # define the search space  ------------------------------------------------
 
@@ -77,12 +72,6 @@ instance = TuningInstanceSingleCrit$new(
 )
 
 tuner = tnr("grid_search", resolution = 5)
-
-op_model <- tuner$optimize(instance)
-saveRDS(op_model, file = "op_model.rds")
-
-importance <- importance(op_model$result$learner, task = task, method = "impurity")
-plot(importance)
 
 
 # Optimize feature subset and fit final model
