@@ -1,4 +1,4 @@
-library(mlr)
+
 library(mlr3)
 library(mlr3tuning)
 library(mlr3learners)
@@ -58,6 +58,8 @@ search_space = ps(
   max.depth = p_int(lower = 20, upper = 100),
   min.node.size = p_int(lower = 20, upper = 100)
 )
+
+
 
 evals100 = trm("evals", n_evals = 100)
 measure = msr("regr.rsq")
@@ -127,7 +129,7 @@ resample_rf$prediction() %>%
 # Define your regression task with spatial-temporal components
 task <- mlr3spatiotempcv::TaskRegrST$new(
   id = "kat_base_CHM",
-  backend = df_20,
+  backend = df_10,
   target = "CHM",
   coordinate_names = c("x", "y"),
   extra_args = list(
@@ -143,17 +145,21 @@ lrn_rf <- mlr3::lrn("regr.ranger")
 
 # define the random forest learner ----------------------------------------
 
+lrn_rf.filt <- lrn("regr.ranger", predict_type = "response", 
+                   mtry = to_tune(lower = 4, upper = 23),
+                   num.trees = to_tune(lower = 500, upper = 2500))
+
 
 lrnr_graph <-
-  po("subsample", frac = 0.6) %>>%
-  mlr3::lrn("regr.ranger")
+  po("subsample", frac = 0.1) %>>%
+  lrn_rf.filt
 
 plot(lrnr_graph)
 
 sub_samp_lrnr <- mlr3::as_learner(lrnr_graph)
 
-afs=auto_fselector( 
-  fselector=fs("random_search"), 
+at=auto_tuner( 
+  tuner=tnr("random_search"), 
   learner=sub_samp_lrnr, 
   resampling=resample, 
   measure=msr("regr.rsq"), 
@@ -162,7 +168,7 @@ afs=auto_fselector(
 # Optimize feature subset and fit final model
 future::plan("multisession", workers = 10)
 progressr::with_progress(expr = {
-  afs$train(task)
+  at$train(task)
 })
 
 # resample_rf ------------------------------------------------------------

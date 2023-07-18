@@ -1,7 +1,6 @@
-#The following code is used for pre-processing the Sentinel-2 and LiDAR data
-#This includes calculation of vegetation spectral indices and topographic metrics. 
-#As well as resampling the data so they all have the same resolution 
-
+## This script is used for pre-processing the optical data and LiDAR Data
+##This includes calcualtion of vegetation spectral indices, topogrpahic metrics 
+##and the generation of a canopy height model
 
 # import packages needed for the analysis ---------------------------------
 library(terra)
@@ -15,8 +14,13 @@ library(dplyr)
 
 # Import Planet Labs Data -------------------------------------------------
 
+# Define Data Paths -------------------------------------------------------
 #data_path <- "/Users/bri/Library/CloudStorage/OneDrive-UniversityofExeter/University/Dissertation/Data"
 data_path <- "/raid/home/bp424/Documents/MTHM603/Data"
+
+
+# import optical planet labs data -----------------------------------------
+
 kat_planet <- rast(file.path(data_path,"Katingan-Comp-22-median.tif"))
 
 print(names(kat_planet))
@@ -27,7 +31,7 @@ print(names(kat_planet))
 dtm <- rast(file.path(data_path,"Original-DEMS/katingan_DEMS/katingan_DTM.tif"))
 dsm <- rast(file.path(data_path,"Original-DEMS/katingan_DEMS/katingan_DSM.tif"))
 
-dsm
+
 # Crop the data so they have the same extent ------------------------------
 #this will also save computing time for the calculations 
 kat_planet <- crop(kat_planet, dtm)
@@ -109,7 +113,8 @@ write.csv(df, file = "/raid/home/bp424/Documents/MTHM603/Data/final_df.csv", row
 
 
 # resample ----------------------------------------------------------------
-
+##this section was completed to for exploratory analysis to see how the performance
+## of machine learning algorithms compared at the three resolutions: 3, 10 and 20 
 
 #resample to 10m resolution 
 
