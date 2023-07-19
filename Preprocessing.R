@@ -138,19 +138,8 @@ df_20m <- as.data.frame(comb_dat_20m, xy=TRUE) %>%
 write.csv(df_20m, file = "/raid/home/bp424/Documents/MTHM603/Data/final_df_20m.csv", row.names = FALSE)
 
 # Create a histogram of canopy heights ------------------------------------
-heights
-
-library(ggplot2)
-
 heights <- df$CHM
 
-count <- df %>%
-  filter(CHM >= 30 & CHM <= 50) %>%
-  nrow()
-
-count
-
-cat("Number of CHM values between 40 and 50:", count)
 
 # Create the histogram plot
 (CHM.hist.plot <- ggplot(data = df, aes(x = CHM)) +
@@ -162,7 +151,7 @@ cat("Number of CHM values between 40 and 50:", count)
         axis.title = element_text(family = "Times New Roman"),
         legend.text = element_text(family = "Times New Roman"),
         legend.title = element_text(family = "Times New Roman"),
-        plot.title = element_text(family = "Times New Roman", size = 16),
+        plot.title = element_text(family = "Times New Roman", size = 10),
         panel.grid.major = element_blank(),
         panel.grid.minor = element_blank()))
 
