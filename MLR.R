@@ -25,7 +25,7 @@ set.seed(1234)
 data_path <- "/raid/home/bp424/Documents/MTHM603/Data"
 cube <- rast(file.path(data_path,"comb_cube.tif"))
 df <- read_csv(file.path(data_path, "final_df.csv"))
-
+df_10 <- read_csv(file.path(data_path, "final_df_10m.csv"))
 
 # generate a task --------------------------------------------------------
 

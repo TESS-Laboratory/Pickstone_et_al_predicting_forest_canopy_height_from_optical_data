@@ -9,8 +9,6 @@ library(colorspace)
 library(tidyverse)
 library(sf)
 library(raster)
-library(dplyr)
-
 
 # Import Planet Labs Data -------------------------------------------------
 
@@ -140,33 +138,34 @@ df_20m <- as.data.frame(comb_dat_20m, xy=TRUE) %>%
 write.csv(df_20m, file = "/raid/home/bp424/Documents/MTHM603/Data/final_df_20m.csv", row.names = FALSE)
 
 # Create a histogram of canopy heights ------------------------------------
+heights
+
+library(ggplot2)
+
 heights <- df$CHM
 
-# Create a histogram
-# Set the font family to Times New Roman
-file_name <- "histogram.png"
-dpi <- 600
+count <- df %>%
+  filter(CHM >= 30 & CHM <= 50) %>%
+  nrow()
 
-# Create the PNG device with high resolution
-png(file = file_name, width = 8, height = 6, units = "in", res = dpi)
+count
 
-# Set the plot margins and mgp values
-par(mar = c(5, 6, 2, 1))  # Increase the left margin value as needed
-par(mgp = c(3, 1, 0))  # Adjust the mgp values as needed
+cat("Number of CHM values between 40 and 50:", count)
 
-# Plot the histogram with desired settings and increased font size
-par(family = "Times New Roman", cex.lab = 1.5)  # Adjust the cex.lab value for font size
-hist(heights, breaks = 10, xlab = "True Canopy Height (m)", 
-     ylab = expression(Frequency ~ "x" ~ 10^6),
-     yaxt = "n", main = "")
+# Create the histogram plot
+(CHM.hist.plot <- ggplot(data = df, aes(x = CHM)) +
+  geom_histogram(bins = 10, fill = "gray70", color = "white") +
+  theme_classic()+
+  labs(x = "Canopy Height (m)", 
+       y = expression(Frequency ~ "x" ~ 10^6)) +
+  theme(axis.text = element_text(family = "Times New Roman"),
+        axis.title = element_text(family = "Times New Roman"),
+        legend.text = element_text(family = "Times New Roman"),
+        legend.title = element_text(family = "Times New Roman"),
+        plot.title = element_text(family = "Times New Roman", size = 16),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank()))
 
-# Define the desired tick positions and labels
-tick_positions <- c(0, 1e6, 2e6, 3e6, 4e6)
+CHM.hist.plot
 
-tick_labels <- c(0, 1, 2, 3, 4)
-
-# Modify the y-axis ticks labels
-axis(side = 2, at = tick_positions, labels = tick_labels)
-
-# Close the PNG device and save the image
-dev.off()
+ggsave(file="CHM_count.png", dpi = 600)

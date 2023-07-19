@@ -1,3 +1,5 @@
+##This script is used for visualisation of the Canopy Height Model and 
+#the Planet Labs Optical Data
 
 # load in required packages  ----------------------------------------------
 library(terra)
@@ -5,14 +7,15 @@ library(tidyterra)
 library(sf)
 library(tidyverse)
 library(raster)
-library(dplyr)
+library(patchwork)
 
 # load in data ------------------------------------------------------------
 
 data_path <- "/raid/home/bp424/Documents/MTHM603/Data"
-kat_planet <- rast(file.path(data_path,"Katingan-Comp-22-median.tif"))
 cube <- rast(file.path(data_path,"comb_cube.tif"))
 df <- read_csv(file.path(data_path, "final_df.csv"))
+
+projected_cube <- project(cube, crs("+proj=longlat +datum=WGS84"))
 
 # Canopy Height Plot ------------------------------------------------------
 # Read LiDAR dtm and dsm file 
@@ -24,25 +27,25 @@ dsm <- rast(file.path(data_path,"Original-DEMS/katingan_DEMS/katingan_DSM.tif"))
 CHM <- dsm - dtm
 names(CHM) <- "CHM"
 
-CHM.plot <- ggplot() + 
+#plot the canopy height model
+(CHM.plot <- ggplot() + 
   theme_bw() +
   geom_spatraster(data = CHM)+
-  theme(axis.text = element_text(size = 6, family = "Times New Roman"), 
-        legend.text = element_text(size = 6, family = "Times New Roman"), 
-        legend.title = element_text(size = 6, family = "Times New Roman"))+
+  theme(axis.text = element_text(size = 4, family = "Times New Roman"), 
+        axis.text.x = element_text(angle = 45, hjust = 1),
+        legend.text = element_text(size = 4, family = "Times New Roman"), 
+        legend.title = element_text(size = 4, family = "Times New Roman"))+
   scale_fill_gradientn(
     name = "Canopy Height (m)",
-    colors = viridisLite::turbo(n = 100),
+    colors = viridisLite::viridis(n = 100),
     na.value = 'transparent',
-    limits = c(0, 55))
+    limits = c(0, 55)))
 
 CHM.plot
 
-ggsave(file="CHM_plot.png", dpi = 600)
-# Sentinel 2 Plot ---------------------------------------------------------
 
+# Planet Labs Plot ---------------------------------------------------------
 
-# create a plot of Sen-2  -------------------------------------------------
 S2_to_rgb_df <- function(df, .min=0.001, .max=1.2){
   as.data.frame(df, xy=TRUE) |>
     mutate(red = case_when(red<.min ~ .min,
@@ -72,9 +75,10 @@ rgb_plot <- function(.x){
   ggplot(data=S2_df, aes(x=x, y=y, fill=rgb(red,green,blue))) +
     theme_bw()+
     geom_raster() +
-    theme(axis.text = element_text(size = 6, family = "Times New Roman"), 
-          legend.text = element_text(size = 6, family = "Times New Roman"), 
-          legend.title = element_text(size = 6, family = "Times New Roman"), 
+    theme(axis.text = element_text(size = 4, family = "Times New Roman"),
+          axis.text.x = element_text(angle = 45, hjust = 1),
+          legend.text = element_text(size = 4, family = "Times New Roman"), 
+          legend.title = element_text(size = 4, family = "Times New Roman"), 
           axis.title.x = element_blank(), 
           axis.title.y = element_blank())+
     scale_fill_identity() +
@@ -85,4 +89,14 @@ rgb_plot <- function(.x){
 
 rgb_plot(projected_cube)
 
-ggsave(file="S2_plot.png", dpi = 600)
+planet.plot <- rgb_plot(projected_cube)
+
+
+
+# combine the two plots and save ------------------------------------------
+
+combined_plot <- CHM.plot + planet.plot
+combined_plot
+
+ggsave(file="combined_data_plot.png", dpi = 600)
+

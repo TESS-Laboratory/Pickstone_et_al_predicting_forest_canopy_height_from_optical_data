@@ -208,3 +208,4 @@ resample_rf$prediction() %>%
   theme_light() +
   labs(x = "Predicted Canopy Height (m)", y = "Observed Canopy Height (m)")
 
+
