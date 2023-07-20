@@ -151,7 +151,7 @@ heights <- df$CHM
         axis.title = element_text(family = "Times New Roman"),
         legend.text = element_text(family = "Times New Roman"),
         legend.title = element_text(family = "Times New Roman"),
-        plot.title = element_text(family = "Times New Roman", size = 10),
+        plot.title = element_text(family = "Times New Roman", size = 8),
         panel.grid.major = element_blank(),
         panel.grid.minor = element_blank()))
 

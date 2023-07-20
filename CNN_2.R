@@ -58,12 +58,12 @@ x_test_cnn <- array_reshape(x_test, c(nrow(x_test), 26, 1))
 # Define the CNN model
 # Define the 1D CNN model
 model <- keras_model_sequential() %>% 
-  layer_conv_1d(filters = 96, kernel_size = 3, activation = "relu", input_shape = c(26, 1)) %>% 
+  layer_conv_1d(filters = 16, kernel_size = 3, activation = "relu", input_shape = c(26, 1)) %>% 
   layer_max_pooling_1d(pool_size = 2) %>% 
-  layer_conv_1d(filters = 96, kernel_size = 3, activation = "relu") %>% 
+  layer_conv_1d(filters = 32, kernel_size = 3, activation = "relu") %>% 
   layer_max_pooling_1d(pool_size = 2) %>% 
   layer_flatten() %>% 
-  layer_dense(units = , activation = "relu") %>% 
+  layer_dense(units = 25, activation = "relu") %>% 
   layer_dropout(0.2) %>% 
   layer_dense(units = 1)
 
@@ -75,32 +75,32 @@ model <- keras_model_sequential()
 
 # Block 1
 model %>%
-  layer_conv_2d(filters = 96, kernel_size = c(3, 3), strides = c(1, 1), activation = "relu", input_shape = c(Your_Input_Shape)) %>%
+  layer_conv_1d(filters = 96, kernel_size = 3, activation = "relu", input_shape = c(26,1)) %>%
   layer_dropout(rate = 0.2)
 
 # Block 2
 model %>%
-  layer_conv_2d(filters = 96, kernel_size = c(3, 3), strides = c(1, 1), activation = "relu") %>%
+  layer_conv_1d(filters = 96, kernel_size = 3, activation = "relu") %>%
   layer_dropout(rate = 0.2)
 
 # Block 3
 model %>%
-  layer_conv_2d(filters = 96, kernel_size = c(3, 3), strides = c(2, 2), activation = "relu") %>%
+  layer_conv_1d(filters = 96, kernel_size = 3, strides = 2, activation = "relu") %>%
   layer_dropout(rate = 0.2)
 
 # Block 4
 model %>%
-  layer_conv_2d(filters = 192, kernel_size = c(3, 3), strides = c(1, 1), activation = "relu") %>%
+  layer_conv_1d(filters = 192, kernel_size = 3, activation = "relu") %>%
   layer_dropout(rate = 0.2)
 
 # Block 5
 model %>%
-  layer_conv_2d(filters = 192, kernel_size = c(3, 3), activation = "relu") %>%
+  layer_conv_1d(filters = 192, kernel_size = 3, activation = "relu") %>%
   layer_dropout(rate = 0.2)
 
 # Block 6
 model %>%
-  layer_conv_2d(filters = 192, kernel_size = c(3, 3), strides = c(2, 2), activation = "relu") %>%
+  layer_conv_1d(filters = 192, kernel_size = 3, activation = "relu") %>%
   layer_dropout(rate = 0.2)
 
 # Block 7
@@ -129,7 +129,7 @@ model %>% compile(
 # Display model summary
 model %>% summary()
 
-model %>% summary()
+
 
 # Compile the model
 model %>% compile(loss = "mse",
