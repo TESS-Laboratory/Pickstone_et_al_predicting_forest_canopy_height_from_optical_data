@@ -178,24 +178,36 @@ model = keras_model_sequential() %>%
   layer_dense(units = 32, activation = "relu") %>%
   layer_dense(units = 1, activation = "linear")
 
-model %>% compile(
-  loss = "mse",
-  optimizer = "adam")
+
+model %>% compile(loss = "mse",
+                  optimizer = "adam",
+                  metrics = c("mean_absolute_error"))
 
 model %>% summary()
 
+history <- model %>% 
+  fit(x_train,
+      y_train,
+      epoch = 50,
+      batch_size = 32,
+      validation_split = 0.1,
+      callbacks = c(callback_early_stopping(monitor = "val_mean_absolute_error",
+                                            patience = 5)),
+      verbose = 2)
+
+
 #Next, we 'll fit the model with train data.
 
-model %>% fit(xtrain, ytrain, epochs = 100, batch_size=16, verbose = 0)
-scores = model %>% evaluate(xtrain, ytrain, verbose = 0)
+model %>% fit(x_train, y_train, epochs = 100, batch_size=16, verbose = 0)
+scores = model %>% evaluate(x_train, y_train, verbose = 0)
 print(scores)
 
 #Now we can predict the test data with the trained model.
 
-ypred = model %>% predict(xtest)
+ypred = model %>% predict(x_test)
 
 #We'll check the accuracy of prediction through the RMSE metrics.
 
-cat("RMSE:", RMSE(ytest, ypred))
+cat("RMSE:", RMSE(y_test, ypred))
 
 

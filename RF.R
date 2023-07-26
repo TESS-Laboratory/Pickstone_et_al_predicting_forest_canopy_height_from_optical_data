@@ -34,50 +34,50 @@ task <- mlr3spatiotempcv::TaskRegrST$new(
 
 spcv_plan <- mlr3::rsmp("repeated_spcv_coords", folds = 3, repeats=2)
 
-learner = lrn("regr.ranger", importance = "impurity")
+learner_rf = lrn("regr.ranger", importance = "impurity")
 
 design = benchmark_grid(task, learner, spcv_plan)
 
-future::plan("multisession", workers = 10) # sets the number of cores to run on -  we have
+future::plan("multisession", workers = 10) # sets the number of cores to run on
 bmr = mlr3::benchmark(design)
 
 
 # Train the learner using resampling
 
 # Get importance values
+learner_rf = lrn("regr.ranger", importance = "impurity")
 
 #Define a resampling plan
 resample <- mlr3::rsmp("repeated_spcv_coords", folds = 3, repeats = 2)
 
 # define the search space  ------------------------------------------------
+terminator = trm("perf_reached", level = 0.85)
 
 search_space = ps(
-  mtry = p_int(lower = 4, upper = 20),
+  mtry = p_int(lower = 2, upper = 23),
   num.trees = p_int(lower = 500, upper = 2000),
-  sample.fraction = p_dbl(lower = 0.001, upper = 0.02),
+  sample.fraction = p_dbl(lower = 0.5, upper = 0.8),
   max.depth = p_int(lower = 20, upper = 100),
   min.node.size = p_int(lower = 20, upper = 100)
 )
 
-
-
-evals100 = trm("evals", n_evals = 100)
-measure = msr("regr.rsq")
-
 instance = TuningInstanceSingleCrit$new(
   task = task,
-  learner = lrn_rf,
+  learner = learner_rf,
   resampling = resample,
   measure = msr("regr.rsq"),
   search_space = search_space,
-  terminator = evals100
+  terminator = terminator
 )
 
 tuner = tnr("grid_search", resolution = 5)
 
+future::plan("multisession", workers = 10)
+tuning_job = tuner$optimize(instance)
+
 
 # Optimize feature subset and fit final model
-future::plan("multisession", workers = 10)
+
 progressr::with_progress(expr = {
   afs$train(task)
 })
@@ -145,9 +145,12 @@ lrn_rf <- mlr3::lrn("regr.ranger")
 
 # define the random forest learner ----------------------------------------
 
-lrn_rf.filt <- lrn("regr.ranger", predict_type = "response", 
-                   mtry = to_tune(lower = 4, upper = 23),
-                   num.trees = to_tune(lower = 500, upper = 2500))
+lrn_rf.filt <- lrn("regr.ranger", predict_type = "response", importance = "impurity",
+                   mtry = to_tune(lower = 2, upper = 23),
+                   num.trees = to_tune(lower = 500, upper = 1500), 
+                   sample.fraction = to_tune(lower = 0.5, upper = 0.8),
+                   max.depth = to_tune(lower = 20, upper = 100),
+                   min.node.size = to_tune(lower = 20, upper = 100))
 
 
 lrnr_graph <-
@@ -167,8 +170,11 @@ at=auto_tuner(
 
 # Optimize feature subset and fit final model
 future::plan("multisession", workers = 10)
+at$train(task)
+
+
 progressr::with_progress(expr = {
-  at$train(task)
+
 })
 
 # resample_rf ------------------------------------------------------------

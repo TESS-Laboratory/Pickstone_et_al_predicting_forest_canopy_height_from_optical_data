@@ -1,10 +1,6 @@
-library(mlr3)
-library(mlr3learners)
-library(mlr3measures)
-library(mlr3filters)
+library(terra)
+library(tidyverse)
 library(keras)
-library(mlr3pipelines)
-library(mlr3keras)
 library(caret)
 library(tensorflow)
 
@@ -15,12 +11,8 @@ df_10 <- read_csv(file.path(data_path, "final_df_10m.csv"))
 sampled_data <- df_10 %>% slice_sample(prop = 0.01)
 set.seed(123)
 
-# try again - this works ------------------------------------------------------
 
-# attempt -----------------------------------------------------------------
-
-# trying to turn it into a CNN --------------------------------------------
-data.set <- as.matrix(df)
+data.set <- as.matrix(df_10)
 dimnames(data.set) = NULL
 dim(data.set)
 summary(data.set[, 29])
@@ -68,103 +60,44 @@ model <- keras_model_sequential() %>%
   layer_dense(units = 1)
 
 
-# from theh paper ---------------------------------------------------------
+model <- keras_model_sequential() %>% 
+  layer_conv_1d(filters = 64, kernel_size = 3, activation = "relu", input_shape = c(26, 1)) %>% 
+  layer_max_pooling_1d(pool_size = 2) %>% 
+  layer_conv_1d(filters = 128, kernel_size = 3, activation = "relu") %>% 
+  layer_max_pooling_1d(pool_size = 2) %>% 
+  layer_flatten() %>% 
+  layer_dense(units = 32, activation = "relu") %>% 
+  layer_dropout(0.2) %>% 
+  layer_dense(units = 1)
 
-# Create the sequential model
-model <- keras_model_sequential()
+model %>% compile(loss = "mse",
+                  optimizer = "adam",
+                  metrics = c("mean_absolute_error"))
 
-# Block 1
-model %>%
-  layer_conv_1d(filters = 96, kernel_size = 3, activation = "relu", input_shape = c(26,1)) %>%
-  layer_dropout(rate = 0.2)
-
-# Block 2
-model %>%
-  layer_conv_1d(filters = 96, kernel_size = 3, activation = "relu") %>%
-  layer_dropout(rate = 0.2)
-
-# Block 3
-model %>%
-  layer_conv_1d(filters = 96, kernel_size = 3, strides = 2, activation = "relu") %>%
-  layer_dropout(rate = 0.2)
-
-# Block 4
-model %>%
-  layer_conv_1d(filters = 192, kernel_size = 3, activation = "relu") %>%
-  layer_dropout(rate = 0.2)
-
-# Block 5
-model %>%
-  layer_conv_1d(filters = 192, kernel_size = 3, activation = "relu") %>%
-  layer_dropout(rate = 0.2)
-
-# Block 6
-model %>%
-  layer_conv_1d(filters = 192, kernel_size = 3, activation = "relu") %>%
-  layer_dropout(rate = 0.2)
-
-# Block 7
-model %>%
-  layer_flatten()
-
-# Block 8
-model %>%
-  layer_dense(units = 128, activation = "relu")
-
-# Block 9
-model %>%
-  layer_dense(units = 128, activation = "relu")
-
-# Block 10
-model %>%
-  layer_dense(units = 2, activation = "linear")  # Use "linear" activation for regression tasks
-
-# Compile the model
-model %>% compile(
-  loss = "mean_squared_error",  # Choose an appropriate loss function for your task
-  optimizer = "adam",           # Choose an optimizer
-  metrics = c("accuracy")       # Add more metrics if required
-)
-
-# Display model summary
 model %>% summary()
 
 
-
-# Compile the model
-model %>% compile(loss = "mse",
-                  optimizer = optimizer_adam(),
-                  metrics = c("mean_absolute_error"))
-
-# Train the model
 history <- model %>% 
   fit(x_train_cnn,
       y_train,
-      epochs = 50,
+      epoch = 500,
       batch_size = 32,
       validation_split = 0.1,
-      callbacks = list(callback_early_stopping(monitor = "val_mean_absolute_error", patience = 5)),
+      callbacks = c(callback_early_stopping(monitor = "val_mean_absolute_error",
+                                            patience = 15)),
       verbose = 2)
 
 c(loss, mae) %<-% (model %>% evaluate(x_test_cnn, y_test, verbose = 0))
 
 paste0("Mean absolute error on test set: ", sprintf("%.2f", mae))
 
-# Fit the model to the training data
-model %>% fit(x_train_cnn, y_train, epochs = 100, batch_size = 16, verbose = 0)
-
-# Generate predictions on the test set
-predictions <- model %>% predict(x_test_cnn)
+ypred = model %>% predict(x_test_cnn)
 
 # Calculate the R-squared using the mlr3 package
-rsquared <- rsq(y_test, predictions)
+rsquared <- R2(y_test, ypred)
 
 # Print the R-squared
 print(rsquared)
-
-
-ypred = model %>% predict(x_test_cnn)
-
 
 cat("RMSE:", RMSE(y_test, ypred))
 

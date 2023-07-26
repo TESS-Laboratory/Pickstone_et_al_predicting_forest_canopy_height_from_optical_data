@@ -12,6 +12,9 @@ library(tidyverse)
 data_path <- "/raid/home/bp424/Documents/MTHM603/Data"
 dtm <- rast(file.path(data_path,"Original-DEMS/katingan_DEMS/katingan_DTM.tif"))
 dsm <- rast(file.path(data_path,"Original-DEMS/katingan_DEMS/katingan_DSM.tif"))
+cube <- rast(file.path(data_path,"comb_cube.tif"))
+df <- read_csv(file.path(data_path, "final_df.csv"))
+df_10 <- read_csv(file.path(data_path, "final_df_10m.csv"))
 CHM <- dsm - dtm
 names(CHM) <- "CHM"
 
@@ -25,8 +28,9 @@ coordinates(CHM_points) <- ~x + y
 
 # Create Variogram --------------------------------------------------------
 
-# Create variogram model
-variogram_model <- variogram(CHM ~ 1, data = CHM_points)
+vgm1 <- variogram(log(CHM)~1, CHM_points)
+lzn.fit=fit.variogram(vgm1,model=vgm(1,"Exp",3000,1))
+
 
 # Plot the variogram to visualize the autocorrelation structure
 file_name <- "variogram.png"
@@ -35,12 +39,7 @@ dpi <- 600
 # Create the PNG device with high resolution
 png(file = file_name, width = 8, height = 6, units = "in", res = dpi)
 
-# Plot the variogram to visualize the autocorrelation structure
-# Set the font family to Times New Roman
-par(family = "Times New Roman", cex.lab = 1.5)
-
-# Plot the variogram model without axes
-plot(variogram_model, xlim = c(0, 10000), ylim = c(0, 60),
+plot(vgm1,lzn.fit, 
      xlab = "Distance (m)", ylab = "Semi-variance")
 
 dev.off()
@@ -51,12 +50,73 @@ spcor <- terra::autocor(CHM_100, method="moran", global=TRUE)
 
 
 
+# check for the appropriate amount of resamples ---------------------------
+library(mlr3)
+library(mlr3learners)
+
+library(mlr3)
+library(mlr3learners)
+
+# Define the range of fold values to test
+fold_values <- c(3, 4, 6, 10, 15)
+
+# Create a task (replace 'your_task' with your actual task)
+task <- mlr3spatiotempcv::TaskRegrST$new(
+  id = "kat_base_CHM",
+  backend = df_10,
+  target = "CHM",
+  coordinate_names = c("x", "y"),
+  extra_args = list(
+    coords_as_features = FALSE,
+    crs = terra::crs(cube)
+  )
+)
+
+spcv_plan_3 <- mlr3::rsmp("repeated_spcv_coords", folds = 3, repeats=1)
+spcv_plan_4 <- mlr3::rsmp("repeated_spcv_coords", folds = 4, repeats=1)
+spcv_plan_5 <- mlr3::rsmp("repeated_spcv_coords", folds =6, repeats=1)
+spcv_plan_6 <- mlr3::rsmp("repeated_spcv_coords", folds = 15, repeats=1)
+
+
+learner <- lrn("regr.lm")
+
+design = benchmark_grid(task, learner, list(spcv_plan_3,spcv_plan_4, spcv_plan_5,
+                                            spcv_plan_6))
+# print(design)
+future::plan("multisession", workers = 10) # sets the number of cores to run on -  we have
+bmr = mlr3::benchmark(design)
+
+aggr = bmr$aggregate(measures = c(msr("regr.rmse"), msr("regr.mse"), msr("regr.rsq")))
+
+gt::gt(aggr[,4:9,])
+
+
+result <- bmr$aggregate(msr("regr.rmse"))
+results[[as.character(folds)]] <- result
+
+result
+results_df <- data.table::rbindlist(results)
+results_df
+# Print the results
+print(results_df)
+
+# Plot the results to visualize the performance across different fold values
+library(ggplot2)
+ggplot(results_df, aes(x = iters, y = regr.rmse)) +
+  geom_line() +
+  geom_point() +
+  xlab("Number of Folds") +
+  ylab("Root Mean Squared Error (RMSE)")
+
+
+# testing for other resampling strategies  --------------------------------
+block_cv <- rsmp("spcv_block", folds = 3, range = 3000)
+
+
+
+
 # Visualise the resampling strategy  --------------------------------------
 
-data_path <- "/raid/home/bp424/Documents/MTHM603/Data"
-cube <- rast(file.path(data_path,"comb_cube.tif"))
-df <- read_csv(file.path(data_path, "final_df.csv"))
-df_10 <- read_csv(file.path(data_path, "final_df_10m.csv"))
 
 # Define your regression task with spatial-temporal components
 task <- mlr3spatiotempcv::TaskRegrST$new(

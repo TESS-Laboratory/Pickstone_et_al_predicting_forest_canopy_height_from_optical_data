@@ -7,25 +7,33 @@ library(mlr3fselect)
 library(mlr3learners)
 library(mlr3mbo)
 library(tidyverse)
-library(dplyr)
 library(terra)
 library(ggpmisc)
-library(lightgbm)
 library(mlr3viz)
 library(GGally)
 library(gt)
-library(blockCV)
 library(sf)
 
 # set seed ----------------------------------------------------------------
 
 set.seed(1234)
 
-# load in the datafile ----------------------------------------------------
+
+
+# set data path -----------------------------------------------------------
 data_path <- "/raid/home/bp424/Documents/MTHM603/Data"
-cube <- rast(file.path(data_path,"comb_cube.tif"))
-df <- read_csv(file.path(data_path, "final_df.csv"))
-df_10 <- read_csv(file.path(data_path, "final_df_10m.csv"))
+
+# load in the data files ----------------------------------------------------
+cube <- rast(file.path(data_path,"S2_comb_data.tif"))
+df_s2 <- read_csv(file.path(data_path, "df_S2.10m_final.csv"))
+df_PS <- read_csv(file.path(data_path, "df_PScope_10m.csv"))
+
+# look for cross correlation ----------------------------------------------
+
+filter = flt("find_correlation")
+filter$calculate(task)
+as.data.table(filter)
+
 
 # generate a task --------------------------------------------------------
 
@@ -33,7 +41,7 @@ df_10 <- read_csv(file.path(data_path, "final_df_10m.csv"))
 # Create a spatiotemporal task using mlr3spatiotempcv
 task <- TaskRegrST$new(
   id = "kat_base_CHM", 
-  backend = df_10,  
+  backend = df_PS,  
   target = "CHM",
   coordinate_names = c("x", "y"), 
   extra_args = list(
@@ -41,9 +49,9 @@ task <- TaskRegrST$new(
     crs = terra::crs(cube)  
   )
 )
-df_10
 
 # Define your model
+
 learner <- lrn("regr.lm")
 
 # Define the learner and resampling plan
@@ -52,41 +60,50 @@ resample <- mlr3::rsmp("repeated_spcv_coords", folds = 3, repeats = 2)
 
 measure <- msr("regr.rsq")
 
-filter = flt("correlation")
 
-answer <- filter$calculate(task)
-answer
+graph = po("filter", filter = flt("correlation")) %>>%
+  mlr3::lrn("regr.lm")
 
-head(as.data.table(answer))
+plot(graph)
 
+sub_samp_lrnr <- mlr3::as_learner(graph)
 
-afs=auto_fselector( 
-  fselector=fs("random_search"), 
-  learner=learner, 
+at=auto_tuner( 
+  tuner=tnr("random_search"), 
+  learner=sub_samp_lrnr, 
   resampling=resample, 
   measure=measure, 
   term_evals=10)
-  #subset_size = 0.3)) 
+
+afs = auto_fselector(
+  fselector = fs("random_search"),
+  learner = learner,
+  resampling = resample,
+  measure = measure,
+  term_evals = 10)
+
 
 #optimizefeaturesubsetandfitfinalmodel 
 future::plan("multisession", workers = 10)
 progressr::with_progress(expr = {
-  afs$train(task)
+  model <- at$train(task)
 })
 
-
-
+model
 # resample_lm ------------------------------------------------------------
 
 resample_lm <- progressr::with_progress(expr ={
   mlr3::resample(
     task = task,
-    learner = afs$learner,
+    learner = at$learner,
     resampling = resample, 
     store_models = FALSE,
     encapsulate = "evaluate"
   )
 })
+
+dt <- as.data.table(resample_lm$prediction()) 
+mlr3measures::rsq(dt$truth, dt$response)
 
 # evaluate ----------------------------------------------------------------
 
@@ -108,7 +125,6 @@ resample_lm$prediction() %>%
     trans = scales::yj_trans(0.1),
     option = "G",
     direction = -1,
-    breaks = c(0, 5000, 20000, 50000)
   ) +
   geom_abline(slope = 1) +
   theme_light() +
