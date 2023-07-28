@@ -17,17 +17,19 @@ PS_10m_df <- read_csv(file.path(data_path, "df_PScope_10m.csv"))
 
 
 print(names(S2_df))
-
 #rename similar columns from Planet Scope and Sentinel2 to see the difference
 S2_df <- S2_df %>%
   rename_with(~paste0(., "_s2"), c(3:7, 13:14, 20:31))
 print(names(S2_df))
 
+# Remove specific columns that are not unique to S2 - except x and y
+drop_columns <- c("slope", "aspect", "roughness", "CHM", "TRIrmsd", "dtm")
+S2_df_update <- S2_df %>% dplyr::select(-one_of(drop_columns))
 
-combined_df <- combined_df %>%
-  relocate(CHM, .after = last_col())
 
-print(names(combined_df))
+# Merge the tibbles based on "x" and "y" columns
+combined_df <- left_join(S2_df_update, PS_10m_df, by = c("x", "y"))%>%
+  tidyr::drop_na()
 
 write.csv(combined_df, file = "/raid/home/bp424/Documents/MTHM603/Data/combined_df.csv", row.names = FALSE)
 

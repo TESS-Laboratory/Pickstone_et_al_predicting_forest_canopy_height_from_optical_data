@@ -24,9 +24,11 @@ set.seed(1234)
 data_path <- "/raid/home/bp424/Documents/MTHM603/Data"
 
 # load in the data files ----------------------------------------------------
-cube <- rast(file.path(data_path,"S2_comb_data.tif"))
+cube_S2 <- rast(file.path(data_path,"S2_comb_data.tif"))
+cube_PS <- rast(file.path(data_path,"PScope_10m.tif"))
 df_s2 <- read_csv(file.path(data_path, "df_S2.10m_final.csv"))
 df_PS <- read_csv(file.path(data_path, "df_PScope_10m.csv"))
+df_comb <- read_csv(file.path(data_path, "combined_df.csv"))
 
 # look for cross correlation ----------------------------------------------
 
@@ -34,6 +36,7 @@ filter = flt("find_correlation")
 filter$calculate(task)
 as.data.table(filter)
 
+df_PS
 
 # generate a task --------------------------------------------------------
 
@@ -41,12 +44,12 @@ as.data.table(filter)
 # Create a spatiotemporal task using mlr3spatiotempcv
 task <- TaskRegrST$new(
   id = "kat_base_CHM", 
-  backend = df_PS,  
+  backend = df_PScope_10m,  
   target = "CHM",
   coordinate_names = c("x", "y"), 
   extra_args = list(
     coords_as_features = FALSE, 
-    crs = terra::crs(cube)  
+    crs = terra::crs(cube_PS)  
   )
 )
 
@@ -56,12 +59,12 @@ learner <- lrn("regr.lm")
 
 # Define the learner and resampling plan
 
-resample <- mlr3::rsmp("repeated_spcv_coords", folds = 3, repeats = 2)
+resample <- mlr3::rsmp("repeated_spcv_coords", folds = 3, repeats = 1)
 
 measure <- msr("regr.rsq")
 
 
-graph = po("filter", filter = flt("correlation")) %>>%
+graph = po("filter", filter = flt("find_correlation"), filter.frac = to_tune(0.6, 1.0)) %>>%
   mlr3::lrn("regr.lm")
 
 plot(graph)

@@ -18,7 +18,8 @@ library(patchwork)
 # Define Data Paths -------------------------------------------------------
 #data_path <- "/Users/bri/Library/CloudStorage/OneDrive-UniversityofExeter/University/Dissertation/Data"
 data_path <- "/raid/home/bp424/Documents/MTHM603/Data"
-S2_10m <- rast(file.path(data_path,"kat/kat_S2_2021-02-27.tif"))
+
+S2_10m <- rast(file.path(data_path,"kat/kat_final_S2_2021-02-27.tif"))
 
 # import optical planet labs data -----------------------------------------
 
@@ -35,16 +36,16 @@ dsm <- rast(file.path(data_path,"Original-DEMS/katingan_DEMS/katingan_DSM.tif"))
 
 # Crop the data so they have the same extent ------------------------------
 #this will also save computing time for the calculations 
-kat_planet <- crop(kat_planet, dtm_LiDAR)
-dtm_LiDAR <- crop(dtm_LiDAR, kat_planet)
-dsm <- crop(dtm_LiDAR, kat_planet)
+kat_planet <- terra::crop(kat_planet, dtm_LiDAR)
+
+#NDVI does not need to be scaled so do this calculation first 
+kat_planet$NDVI <- (kat_planet$nir - kat_planet$red)/(kat_planet$nir +kat_planet$red)
 
 #scale down the 8 existing bands - stored within "names"
 kat_planet <- kat_planet[[(names(kat_planet))]]/10000
 
 
 # Do the band math - HG examples
-kat_planet$NDVI <- (kat_planet$nir - kat_planet$red)/(kat_planet$nir +kat_planet$red)
 kat_planet$NDRE <- (kat_planet$nir - kat_planet$rededge)/(kat_planet$nir +kat_planet$rededge)
 kat_planet$EVI <- 2.5 * ((kat_planet$nir) - (kat_planet$red)) /
   ((kat_planet$nir) + 6 * (kat_planet$red) - 7.5 * (kat_planet$blue) + 1)
@@ -74,12 +75,12 @@ kat_planet$GEMI <- ((2 *((kat_planet$nir^2.0)-(kat_planet$red^2.0)) + 1.5 *
 CHM <- dsm - dtm_LiDAR
 names(CHM) <- "CHM"
 
-CHM
 
 #make sure the CHM has the same projection as the PlanetScope Data
 CHM_project_3m <- project(CHM, kat_planet, method="bilinear")
 
-# download the digitial terrain model from corpenicus ---------------------
+
+# download the digital terrain model from corpenicus ---------------------
 bbox <- st_bbox(kat_planet) 
 bbox_wgs84 <- bbox |>
   st_as_sfc(crs=32749) |> #make sure you change this
@@ -87,7 +88,6 @@ bbox_wgs84 <- bbox |>
   st_bbox()
 
 # extracting digital terrain model ----------------------------------------
-
 mpc_dtm_src <- function(aoi_box,
                         collection = "cop-dem-glo-30"){
   
@@ -108,29 +108,29 @@ mpc_dtm_src <- function(aoi_box,
   
 }
 
-dtm <- mpc_dtm_src(bbox_wgs84) |> # call the function to get the tile urls
+dtm.3m <- mpc_dtm_src(bbox_wgs84) |> # call the function to get the tile urls
   lapply(rast) |> # iterate over the tiles and load as a spatRaster object
   terra::sprc() |> # convert to a collection
   terra::merge() |> # merge the tiles - basic mosaic - nothing overlaps here so this is fine.
-  project(kat_planet) # project into our desired CRS and extent etc.
-names(dtm) <- "dtm"
+  project(kat_planet, method="bilinear") # project into our desired CRS and extent etc.
+names(dtm.3m) <- "dtm"
 
 # now generate a few geomorphometric layers
-asp <- terra::terrain(dtm, "aspect")
-slp <- terrain(dtm, "slope")
-TRI <- terrain(dtm, "TRIrmsd")
-rough <- terrain(dtm, "roughness")
+asp <- terra::terrain(dtm.3m, "aspect")
+slp <- terrain(dtm.3m, "slope")
+TRI <- terrain(dtm.3m, "TRIrmsd")
+rough <- terrain(dtm.3m, "roughness")
 
-terrain <- c(dtm, asp, slp, TRI, rough)
+terrain <- c(dtm.3m, asp, slp, TRI, rough)
 
 PScope_3m <- c(kat_planet,terrain, CHM_project_3m)
 
 #export file, so that the combined raster file can be used in other analyses 
-writeRaster(PScope_3m, filename = "/raid/home/bp424/Documents/MTHM603/Data/PScope_3m.tif")
+writeRaster(PScope_3m, filename = "/raid/home/bp424/Documents/MTHM603/Data/PScope_3m.tif", 
+            overwrite = TRUE)
 
 PScope_3m_df <- as.data.frame(PScope_3m, xy=TRUE) |> 
   tidyr::drop_na()
-
 
 #export data table so it can be used in other analyses 
 write.csv(PScope_3m_df, file = "/raid/home/bp424/Documents/MTHM603/Data/PScope_3m_df.csv", row.names = FALSE)
@@ -138,7 +138,6 @@ write.csv(PScope_3m_df, file = "/raid/home/bp424/Documents/MTHM603/Data/PScope_3
 # resample ----------------------------------------------------------------
 #resample 3m stack to 10m stack for Planet Scope 
 CHM10 <- project(CHM, S2_10m, method="bilinear")
-
 
 dtm_10 <- mpc_dtm_src(bbox_wgs84) |> # call the function to get the tile urls
   lapply(rast) |> # iterate over the tiles and load as a spatRaster object
@@ -159,10 +158,13 @@ kat_planet10 <- project(kat_planet, S2_10m, method="bilinear")
 
 PScope_10m <- c(kat_planet10, terrain_10, CHM10)
 
+
 #export file, so that the combined raster file can be used in other analyses 
-writeRaster(PScope_10m, filename = "/raid/home/bp424/Documents/MTHM603/Data/PScope_10m.tif")
+writeRaster(PScope_10m, filename = "/raid/home/bp424/Documents/MTHM603/Data/PScope_10m.tif", 
+            overwrite = TRUE)
 
 #create datatable
+
 df_PScope_10m <- as.data.frame(PScope_10m, xy=TRUE) %>%
   tidyr::drop_na()
 

@@ -7,14 +7,18 @@ library(sf)
 library(spdep)
 library(sp)
 library(tidyverse)
+library(mlr3)
+library(mlr3learners)
+library(patchwork)
 
+set.seed(1234)
 # load in required datafiles ----------------------------------------------
 data_path <- "/raid/home/bp424/Documents/MTHM603/Data"
 dtm <- rast(file.path(data_path,"Original-DEMS/katingan_DEMS/katingan_DTM.tif"))
 dsm <- rast(file.path(data_path,"Original-DEMS/katingan_DEMS/katingan_DSM.tif"))
-cube <- rast(file.path(data_path,"comb_cube.tif"))
-df <- read_csv(file.path(data_path, "final_df.csv"))
-df_10 <- read_csv(file.path(data_path, "final_df_10m.csv"))
+cube.10m <- rast(file.path(data_path,"PScope_10m.tif"))
+df_PS.10m <- read_csv(file.path(data_path, "df_PScope_10m.csv")) #PlanetScope - 10m
+
 CHM <- dsm - dtm
 names(CHM) <- "CHM"
 
@@ -49,149 +53,100 @@ dev.off()
 spcor <- terra::autocor(CHM_100, method="moran", global=TRUE)
 
 
-
 # check for the appropriate amount of resamples ---------------------------
-library(mlr3)
-library(mlr3learners)
 
-library(mlr3)
-library(mlr3learners)
-
-# Define the range of fold values to test
-fold_values <- c(3, 4, 6, 10, 15)
 
 # Create a task (replace 'your_task' with your actual task)
 task <- mlr3spatiotempcv::TaskRegrST$new(
   id = "kat_base_CHM",
-  backend = df_10,
+  backend = df_PS.10m,
   target = "CHM",
   coordinate_names = c("x", "y"),
   extra_args = list(
     coords_as_features = FALSE,
-    crs = terra::crs(cube)
+    crs = terra::crs(cube.10m)
   )
 )
 
-spcv_plan_3 <- mlr3::rsmp("repeated_spcv_coords", folds = 3, repeats=1)
-spcv_plan_4 <- mlr3::rsmp("repeated_spcv_coords", folds = 4, repeats=1)
-spcv_plan_5 <- mlr3::rsmp("repeated_spcv_coords", folds =6, repeats=1)
-spcv_plan_6 <- mlr3::rsmp("repeated_spcv_coords", folds = 15, repeats=1)
+spcv_plan_2 <- mlr3::rsmp("repeated_spcv_coords", folds = 2, repeats=2)
+spcv_plan_3 <- mlr3::rsmp("repeated_spcv_coords", folds = 3, repeats=2)
+spcv_plan_4 <- mlr3::rsmp("repeated_spcv_coords", folds = 4, repeats=2)
+spcv_plan_5 <- mlr3::rsmp("repeated_spcv_coords", folds = 5, repeats=2)
+spcv_plan_6 <- mlr3::rsmp("repeated_spcv_coords", folds = 6, repeats=2)
+spcv_plan_7 <- mlr3::rsmp("repeated_spcv_coords", folds = 7, repeats=2)
+spcv_plan_8 <- mlr3::rsmp("repeated_spcv_coords", folds = 8, repeats=2)
+spcv_plan_9 <- mlr3::rsmp("repeated_spcv_coords", folds = 9, repeats=2)
+spcv_plan_10 <- mlr3::rsmp("repeated_spcv_coords", folds = 10, repeats=2)
+spcv_plan_11 <- mlr3::rsmp("repeated_spcv_coords", folds = 11, repeats=2)
+spcv_plan_12 <- mlr3::rsmp("repeated_spcv_coords", folds = 12, repeats=2)
+spcv_plan_13 <- mlr3::rsmp("repeated_spcv_coords", folds = 13, repeats=2)
 
 
 learner <- lrn("regr.lm")
 
-design = benchmark_grid(task, learner, list(spcv_plan_3,spcv_plan_4, spcv_plan_5,
-                                            spcv_plan_6))
+design = benchmark_grid(task, learner, list(spcv_plan_2,spcv_plan_3,
+                                            spcv_plan_4, spcv_plan_5,
+                                            spcv_plan_6, spcv_plan_7, 
+                                            spcv_plan_8, spcv_plan_9, 
+                                            spcv_plan_10, spcv_plan_11,
+                                            spcv_plan_12))
 # print(design)
 future::plan("multisession", workers = 10) # sets the number of cores to run on -  we have
 bmr = mlr3::benchmark(design)
 
-aggr = bmr$aggregate(measures = c(msr("regr.rmse"), msr("regr.mse"), msr("regr.rsq")))
+aggr = bmr$aggregate(measures = c(msr("regr.rmse")))
 
-gt::gt(aggr[,4:9,])
+gt::gt(aggr[,3:7,])
 
 
-result <- bmr$aggregate(msr("regr.rmse"))
-results[[as.character(folds)]] <- result
+result_rmse <- bmr$aggregate(msr("regr.rmse"))
 
-result
-results_df <- data.table::rbindlist(results)
-results_df
+results_df <- bind_rows(result_rmse)
+
 # Print the results
 print(results_df)
 
+
+# Filter the first 12 rows of the data.table
+
 # Plot the results to visualize the performance across different fold values
-library(ggplot2)
-ggplot(results_df, aes(x = iters, y = regr.rmse)) +
-  geom_line() +
-  geom_point() +
-  xlab("Number of Folds") +
-  ylab("Root Mean Squared Error (RMSE)")
+(ggplot(filtered_results, aes(x = iters, y = regr.rmse)) +
+  geom_line(size = 0.2) +
+  geom_point(size = 0.3) +
+  theme_bw()+
+  theme(axis.text = element_text(family = "Times New Roman", size = 6),
+       axis.title = element_text(family = "Times New Roman", size = 6))+
+  xlab("Number of Folds with Two Repeats") +
+  ylab("Root Mean Squared Error (RMSE) (m)") +
+  scale_x_continuous(breaks = seq(1, max(filtered_results$iters), by = 2)))
 
 
-# testing for other resampling strategies  --------------------------------
-block_cv <- rsmp("spcv_block", folds = 3, range = 3000)
-
-
+ggsave(file="RMSE_cv_plot.png", dpi = 600)
 
 
 # Visualise the resampling strategy  --------------------------------------
 
-
-# Define your regression task with spatial-temporal components
-task <- mlr3spatiotempcv::TaskRegrST$new(
-  id = "kat_base_CHM",
-  backend = df_10,
-  target = "CHM",
-  coordinate_names = c("x", "y"),
-  extra_args = list(
-    coords_as_features = FALSE,
-    crs = terra::crs(cube)
-  )
-)
-
 #create the resampling strategy for the train and test set 
-resample <- rsmp("repeated_spcv_coords", folds = 3, repeats = 2)
+resample <- rsmp("repeated_spcv_coords", folds = 11, repeats = 2)
+
 
 # Create the autoplot with custom font and tilted x-axis labels
-autoplot(resample, task = task, fold_id = 1:1) +
+Fold_1 <- autoplot(resample, task = task, fold_id = 1:1) +
   theme(
     text = element_text(size = 7, family = "Times New Roman"),
-    axis.text.x = element_text(angle = 45, hjust = 1)
-  )
+    axis.text.x = element_text(angle = 45, hjust = 1))
 
-autoplot(resample, task = task, fold_id = 2:2) +
+Fold_2 <- autoplot(resample, task = task, fold_id = 2:2) +
   theme(
-    text = element_text(size = 7,family = "Times New Roman"),
-    axis.text.x = element_text(angle = 45, hjust = 1)
-  )
+    text = element_text(size = 7, family = "Times New Roman"),
+    axis.text.x = element_text(angle = 45, hjust = 1))
 
-autoplot(resample, task = task, fold_id = 3:3) +
+Fold_3 <- autoplot(resample, task = task, fold_id = 3:3) +
   theme(
-    text = element_text(size = 7,family = "Times New Roman"),
-    axis.text.x = element_text(angle = 45, hjust = 1)
-  )
+    text = element_text(size = 7, family = "Times New Roman"),
+    axis.text.x = element_text(angle = 45, hjust = 1))
 
-ggsave(file="Fold_3.png", dpi = 600)
+Fold_1 + Fold_2
 
-# resample_lm ------------------------------------------------------------
-
-resample_lm <- progressr::with_progress(expr ={
-  mlr3::resample(
-    task = task,
-    learner = afs$learner,
-    resampling = resample, 
-    store_models = FALSE,
-    encapsulate = "evaluate"
-  )
-})
-
-# evaluate ----------------------------------------------------------------
-
-metric_scores <- resample_lm$aggregate(measure = c(
-  mlr3::msr("regr.bias"),
-  mlr3::msr("regr.rmse"),
-  mlr3::msr("regr.rsq"),
-  mlr3::msr("regr.mae")))
-
-metric_scores
-
-# visualise ---------------------------------------------------------------
-
-resample_lm$prediction() %>%
-  ggplot() +
-  aes(x = response, y = truth) +
-  geom_bin_2d(binwidth = 0.3) +
-  scale_fill_viridis_c(
-    trans = scales::yj_trans(0.1),
-    option = "G",
-    direction = -1,
-    breaks = c(0, 5000, 20000, 50000)
-  ) +
-  geom_abline(slope = 1) +
-  theme_light() +
-  labs(x = "Predicted Canopy Height (m)", y = "Observed Canopy Height (m)")
-
-
-
+ggsave(file="resampling_plan.png", dpi = 600)
 

@@ -26,8 +26,7 @@ items = s |>
               datetime = "2021-01-01/2022-12-31") |>
   post_request() |> items_fetch(progress = FALSE)
 
-length(items$features)
-#in this search there are 149 features
+length(items$features) #in this search there are 149 features
 
 
 #list the names of all bands to be included in the collection by adding the assets_names argument
@@ -111,7 +110,7 @@ dtm_S2.10m <- mpc_dtm_src(bbox_wgs84) |> # call the function to get the tile url
   lapply(rast) |> # iterate over the tiles and load as a spatRaster object
   terra::sprc() |> # convert to a collection
   terra::merge() |> # merge the tiles - basic mosaic - nothing overlaps here so this is fine.
-  project(s2_cube_10m) # project into our desired CRS and extent etc.
+  project(s2_cube_10m, method="bilinear") # project into our desired CRS and extent etc.
 names(dtm_S2.10m) <- "dtm"
 
 # now generate a few geomorphometric layers
@@ -194,4 +193,3 @@ S2.10m_df <- S2.10m_df %>%
   relocate(CHM, .after = last_col())
 
 write.csv(S2.10m_df, file = "/raid/home/bp424/Documents/MTHM603/Data/df_S2.10m_final.csv", row.names = FALSE)
-
