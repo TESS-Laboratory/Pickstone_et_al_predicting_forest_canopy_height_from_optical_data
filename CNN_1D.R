@@ -5,14 +5,16 @@ library(caret)
 library(tensorflow)
 
 data_path <- "/raid/home/bp424/Documents/MTHM603/Data"
-cube <- rast(file.path(data_path,"comb_cube.tif"))
-df <- read_csv(file.path(data_path, "final_df.csv"))
-df_10 <- read_csv(file.path(data_path, "final_df_10m.csv"))
-sampled_data <- df_10 %>% slice_sample(prop = 0.01)
-set.seed(123)
+# load in the data files ----------------------------------------------------
+df_s2 <- read_csv(file.path(data_path, "df_S2.10m_final.csv")) #sentinel 2 - 10m
+df_PS.3m <- read_csv(file.path(data_path, "PScope_3m_df.csv")) #PlanetScope - 3m
+df_PS.10m <- read_csv(file.path(data_path, "df_PScope_10m.csv")) #PlanetScope - 10m
+df_comb <- read_csv(file.path(data_path, "combined_df.csv")) #combined data - 10m 
 
 
-data.set <- as.matrix(df_10)
+sampled_tibble <- df_PS.10m %>%
+  sample_frac(0.10)
+data.set <- as.matrix(df_PS.10m)
 dimnames(data.set) = NULL
 dim(data.set)
 summary(data.set[, 29])
@@ -21,7 +23,7 @@ set.seed(123)
 indx <- sample(2,
                nrow(data.set),
                replace = TRUE,
-               prob = c(0.8, 0.2))
+               prob = c(0.8, 0.3))
 
 x_train <- data.set[indx == 1, 3:28]
 x_test <- data.set[indx == 2, 3:28]
@@ -39,7 +41,7 @@ x_test <- scale(x_test,
                 scale = sd.train)
 x_train <- scale(x_train)
 
-
+x_train
 
 # Reshape the data for CNN (1D Convolution)
 x_train_cnn <- array_reshape(x_train, c(nrow(x_train), 26, 1))
@@ -50,43 +52,78 @@ x_test_cnn <- array_reshape(x_test, c(nrow(x_test), 26, 1))
 # Define the CNN model
 # Define the 1D CNN model
 model <- keras_model_sequential() %>% 
-  layer_conv_1d(filters = 16, kernel_size = 3, activation = "relu", input_shape = c(26, 1)) %>% 
+  layer_conv_1d(filters = 16, kernel_size = 3, activation = "relu", 
+                input_shape = c(26, 1)) %>% 
   layer_max_pooling_1d(pool_size = 2) %>% 
   layer_conv_1d(filters = 32, kernel_size = 3, activation = "relu") %>% 
   layer_max_pooling_1d(pool_size = 2) %>% 
   layer_flatten() %>% 
-  layer_dense(units = 25, activation = "relu") %>% 
-  layer_dropout(0.2) %>% 
-  layer_dense(units = 1)
-
-
-model <- keras_model_sequential() %>% 
-  layer_conv_1d(filters = 64, kernel_size = 3, activation = "relu", input_shape = c(26, 1)) %>% 
-  layer_max_pooling_1d(pool_size = 2) %>% 
-  layer_conv_1d(filters = 128, kernel_size = 3, activation = "relu") %>% 
-  layer_max_pooling_1d(pool_size = 2) %>% 
-  layer_flatten() %>% 
   layer_dense(units = 32, activation = "relu") %>% 
-  layer_dropout(0.2) %>% 
+  layer_dropout(0.1) %>% 
   layer_dense(units = 1)
 
-model %>% compile(loss = "mse",
-                  optimizer = "adam",
-                  metrics = c("mean_absolute_error"))
+
+# Modified First Model
+model <- keras_model_sequential() %>%
+  # First Convolutional Layer
+  layer_conv_1d(filters = 32, kernel_size = 5, activation = "relu", 
+                input_shape = c(26, 1)) %>%
+  layer_batch_normalization() %>%
+  
+  # First Max Pooling Layer
+  layer_max_pooling_1d(pool_size = 2) %>%
+  
+  # Second Convolutional Layer
+  layer_conv_1d(filters = 64, kernel_size = 3, activation = "relu") %>%
+  layer_batch_normalization() %>%
+  
+  # Second Max Pooling Layer
+  layer_max_pooling_1d(pool_size = 2) %>%
+  
+  # Flatten Layer
+  layer_flatten() %>%
+  
+  # Dense Layer with ReLU Activation
+  layer_dense(units = 64, activation = "relu") %>%
+  layer_dropout(0.2) %>%
+  
+  # Output Layer w
+  
+  layer_dense(units = 1)
+
+# Compile the model with an appropriate optimizer and loss function
+model %>% compile(
+  optimizer = "adam",
+  loss = "mse",
+  metrics = c("mean_absolute_error"))
+
+# Train the model
+history <- model %>% fit(
+  x_train_cnn, y_train,
+  epochs = 100, # You can adjust the number of epochs
+  batch_size = 32, # You can adjust the batch size
+  validation_split = 0.2, 
+  callbacks = c(callback_early_stopping(monitor = "val_mean_absolute_error",
+                                        patience = 20))
+)
+
+# Evaluate the model on the test set
+loss_and_metrics <- model %>% evaluate(x_test, y_test, verbose = 0)
+cat("Test accuracy:", loss_and_metrics[2], "\n")
 
 model %>% summary()
 
-
-history <- model %>% 
+progressr::with_progress(expr = {
+  history <- model %>% 
   fit(x_train_cnn,
       y_train,
-      epoch = 500,
+      epoch = 50,
       batch_size = 32,
-      validation_split = 0.1,
-      callbacks = c(callback_early_stopping(monitor = "val_mean_absolute_error",
+      validation_split = 0.2,
+      callbacks = c(callback_early_stopping(monitor = "val_accuracy",
                                             patience = 15)),
       verbose = 2)
-
+})
 c(loss, mae) %<-% (model %>% evaluate(x_test_cnn, y_test, verbose = 0))
 
 paste0("Mean absolute error on test set: ", sprintf("%.2f", mae))
@@ -98,6 +135,8 @@ rsquared <- R2(y_test, ypred)
 
 # Print the R-squared
 print(rsquared)
+
+
 
 cat("RMSE:", RMSE(y_test, ypred))
 

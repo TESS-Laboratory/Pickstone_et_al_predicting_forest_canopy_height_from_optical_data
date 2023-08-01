@@ -20,6 +20,7 @@ library(patchwork)
 data_path <- "/raid/home/bp424/Documents/MTHM603/Data"
 
 S2_10m <- rast(file.path(data_path,"kat/kat_final_S2_2021-02-27.tif"))
+kat_boundary <- st_read(file.path(data_path, "katingan_aoi.gpkg"))
 
 # import optical planet labs data -----------------------------------------
 
@@ -138,6 +139,25 @@ write.csv(PScope_3m_df, file = "/raid/home/bp424/Documents/MTHM603/Data/PScope_3
 # resample ----------------------------------------------------------------
 #resample 3m stack to 10m stack for Planet Scope 
 CHM10 <- project(CHM, S2_10m, method="bilinear")
+mpc_dtm_src <- function(aoi_box,
+                        collection = "cop-dem-glo-30"){
+  
+  s_obj <- rstac::stac("https://planetarycomputer.microsoft.com/api/stac/v1")
+  rstac::get_request(s_obj)
+  
+  it_obj <- s_obj  |>
+    rstac::stac_search(collections = collection[1],
+                       bbox = c(aoi_box["xmin"],aoi_box["ymin"],
+                                aoi_box["xmax"],aoi_box["ymax"]))  |>
+    rstac::get_request()
+  
+  src_list <-rstac::assets_url(it_obj)
+  
+  .urls <- src_list[grep(".tif$", src_list)]
+  
+  sapply(.urls, function(x) paste0("/vsicurl/", x), USE.NAMES =FALSE)
+  
+}
 
 dtm_10 <- mpc_dtm_src(bbox_wgs84) |> # call the function to get the tile urls
   lapply(rast) |> # iterate over the tiles and load as a spatRaster object

@@ -90,6 +90,10 @@ design = benchmark_grid(task, learner, list(spcv_plan_2,spcv_plan_3,
                                             spcv_plan_8, spcv_plan_9, 
                                             spcv_plan_10, spcv_plan_11,
                                             spcv_plan_12))
+
+
+design = benchmark_grid(task, learner,rcv)
+
 # print(design)
 future::plan("multisession", workers = 10) # sets the number of cores to run on -  we have
 bmr = mlr3::benchmark(design)
@@ -110,7 +114,7 @@ print(results_df)
 # Filter the first 12 rows of the data.table
 
 # Plot the results to visualize the performance across different fold values
-(ggplot(filtered_results, aes(x = iters, y = regr.rmse)) +
+(ggplot(results_df, aes(x = iters, y = regr.rmse)) +
   geom_line(size = 0.2) +
   geom_point(size = 0.3) +
   theme_bw()+
@@ -118,10 +122,10 @@ print(results_df)
        axis.title = element_text(family = "Times New Roman", size = 6))+
   xlab("Number of Folds with Two Repeats") +
   ylab("Root Mean Squared Error (RMSE) (m)") +
-  scale_x_continuous(breaks = seq(1, max(filtered_results$iters), by = 2)))
+  scale_x_continuous(breaks = seq(1, max(results_df$iters), by = 1)))
 
 
-ggsave(file="RMSE_cv_plot.png", dpi = 600)
+ggsave(file="RMSE_blockcv_plot.png", dpi = 600)
 
 
 # Visualise the resampling strategy  --------------------------------------
@@ -137,11 +141,6 @@ Fold_1 <- autoplot(resample, task = task, fold_id = 1:1) +
     axis.text.x = element_text(angle = 45, hjust = 1))
 
 Fold_2 <- autoplot(resample, task = task, fold_id = 2:2) +
-  theme(
-    text = element_text(size = 7, family = "Times New Roman"),
-    axis.text.x = element_text(angle = 45, hjust = 1))
-
-Fold_3 <- autoplot(resample, task = task, fold_id = 3:3) +
   theme(
     text = element_text(size = 7, family = "Times New Roman"),
     axis.text.x = element_text(angle = 45, hjust = 1))
