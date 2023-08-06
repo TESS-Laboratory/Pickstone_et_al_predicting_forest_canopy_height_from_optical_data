@@ -1,5 +1,5 @@
 ##This script is used for visualisation of the Canopy Height Model and 
-#the Planet Labs Optical Data
+#the Planet Labs & Sentinel-2  Data
 
 # load in required packages  ----------------------------------------------
 library(terra)
@@ -29,23 +29,26 @@ names(CHM) <- "CHM"
 (CHM.plot <- ggplot() + 
   theme_bw() +
   geom_spatraster(data = CHM)+
-  theme(axis.text = element_text(size = 4, family = "Times New Roman"), 
+  theme(axis.text = element_text(size = 3, family = "Times New Roman"), 
         axis.text.x = element_text(angle = 45, hjust = 1),
-        legend.text = element_text(size = 4, family = "Times New Roman"), 
-        legend.title = element_text(size = 4, family = "Times New Roman"))+
+        legend.text = element_text(size = 3, family = "Times New Roman"), 
+        legend.title = element_text(size = 3, family = "Times New Roman"), 
+        axis.ticks = element_line(linewidth = 0.1))+
   scale_fill_gradientn(
     name = "Canopy Height (m)",
     colors = viridisLite::viridis(n = 100),
     na.value = 'transparent',
-    limits = c(0, 55)))
+    limits = c(0, 55), 
+    guide = guide_colorbar(barwidth = .5, barheight = 2)))
 
-CHM.plot
-
+# planet labs plot --------------------------------------------------------
 
 # Planet Labs Plot ---------------------------------------------------------
+#first convert the coordinate reference system to match that of the LiDAR
+projected_cube.3m <- project(PScope_3m_cube, crs("+proj=longlat +datum=WGS84"))
 
-PS_to_rgb_df <- function(PScope_3m_cube, .min=0.001, .max=1.9){
-  as.data.frame(PScope_3m_cube, xy=TRUE) |>
+PS_to_rgb_df <- function(r, .min=0.001, .max= 0.1){
+  as.data.frame(r, xy=TRUE) |>
     mutate(red = case_when(red<.min ~ .min,
                            red>.max ~ .max,
                            TRUE ~ red),
@@ -67,7 +70,7 @@ PS_to_rgb_df <- function(PScope_3m_cube, .min=0.001, .max=1.9){
 #'
 #' @return A ggplot
 #' 
-projected_cube.3m <- project(PScope_3m_cube, crs("+proj=longlat +datum=WGS84"))
+
 rgb_plot <- function(.x){
   PS_df <- PS_to_rgb_df(.x[[c("red", "green", "blue")]]) |>  # run the function to get a dataframe
     tidyr::drop_na()
@@ -75,27 +78,28 @@ rgb_plot <- function(.x){
   ggplot(data=PS_df, aes(x=x, y=y, fill=rgb(red,green,blue))) +
     theme_bw()+
     geom_raster() +
-    theme(axis.text = element_text(size = 4, family = "Times New Roman"),
+    theme(axis.text = element_text(size = 3, family = "Times New Roman"),
           axis.text.x = element_text(angle = 45, hjust = 1),
-          legend.text = element_text(size = 4, family = "Times New Roman"), 
-          legend.title = element_text(size = 4, family = "Times New Roman"), 
+          legend.text = element_text(size = 3, family = "Times New Roman"), 
+          legend.title = element_text(size = 3, family = "Times New Roman"), 
           axis.title.x = element_blank(), 
-          axis.title.y = element_blank())+
+          axis.title.y = element_blank(),
+          axis.ticks = element_line(linewidth = 0.1))+
     scale_fill_identity() +
     coord_fixed()+
     coord_sf(crs = 4326)
 }
 
-rgb_plot(projected_cube)
 
-planet.plot.3m <- rgb_plot(projected_cube)
-
+planet.plot.3m <- rgb_plot(projected_cube.3m)
+planet.plot.3m
 
 # Sentinel-2 Data plot ---------------------------------
+projected_cube.S2 <- project(S2_cube, crs("+proj=longlat +datum=WGS84"))
 
 
-S2_to_rgb_df <- function(S2_cube, .min=0, .max=1.2){
-  as.data.frame(S2_cube, xy=TRUE) |>
+S2_to_rgb_df <- function(r, .min=0.001, .max=0.13, .yr=2021){
+  as.data.frame(r, xy=TRUE) |>
     mutate(red = case_when(red<.min ~ .min,
                            red>.max ~ .max,
                            TRUE ~ red),
@@ -107,7 +111,8 @@ S2_to_rgb_df <- function(S2_cube, .min=0, .max=1.2){
            blue = case_when(blue<.min ~ .min,
                             blue>.max ~ .max,
                             TRUE ~ blue),
-           blue = scales::rescale(blue, c(0,1)))
+           blue = scales::rescale(blue, c(0,1)), 
+           Year = .yr)
   
 }
 
@@ -117,7 +122,7 @@ S2_to_rgb_df <- function(S2_cube, .min=0, .max=1.2){
 #'
 #' @return A ggplot
 #' 
-projected_cube.S2 <- project(S2_cube, crs("+proj=longlat +datum=WGS84"))
+
 
 rgb_plot <- function(.x){
   S2_df <- S2_to_rgb_df(.x[[c("red", "green", "blue")]]) |>  # run the function to get a dataframe
@@ -126,25 +131,25 @@ rgb_plot <- function(.x){
   ggplot(data=S2_df, aes(x=x, y=y, fill=rgb(red,green,blue))) +
     theme_bw()+
     geom_raster() +
-    theme(axis.text = element_text(size = 4, family = "Times New Roman"),
+    theme(axis.text = element_text(size = 3, family = "Times New Roman"),
           axis.text.x = element_text(angle = 45, hjust = 1),
-          legend.text = element_text(size = 4, family = "Times New Roman"), 
-          legend.title = element_text(size = 4, family = "Times New Roman"), 
+          legend.text = element_text(size = 3, family = "Times New Roman"), 
+          legend.title = element_text(size = 3, family = "Times New Roman"), 
           axis.title.x = element_blank(), 
-          axis.title.y = element_blank())+
+          axis.title.y = element_blank(),
+          axis.ticks = element_line(linewidth = 0.1))+
     scale_fill_identity() +
     coord_fixed()+
     coord_sf(crs = 4326)
 }
 
-
 S2_plot.10m <- rgb_plot(projected_cube.S2)
-S2_plot.10m
+
 
 # combine the two plots and save ------------------------------------------
 
 CHM.plot + planet.plot.3m + S2_plot.10m
-combined_plot
+
 
 ggsave(file="combined_data_plot.png", dpi = 600)
 

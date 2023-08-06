@@ -22,6 +22,8 @@ data_path <- "/raid/home/bp424/Documents/MTHM603/Data"
 S2_10m <- rast(file.path(data_path,"kat/kat_final_S2_2021-02-27.tif"))
 kat_boundary <- st_read(file.path(data_path, "katingan_aoi.gpkg"))
 
+st_area(kat_boundary)
+
 # import optical planet labs data -----------------------------------------
 
 kat_planet <- rast(file.path(data_path,"Katingan-Comp-22-median.tif"))
@@ -193,28 +195,32 @@ write.csv(df_PScope_10m, file = "/raid/home/bp424/Documents/MTHM603/Data/df_PSco
 # Create a histogram of canopy heights for 3m and 10m ------------------------------------
 
 # Create the 3m histogram plot
-(CHM.3m.PS.plot <- ggplot(data = PScope_3m_df, aes(x = CHM)) +
-  geom_histogram(bins = 10, fill = "gray70", color = "white") +
+(CHM.3m.PS.plot <- ggplot(data = df_PS.3m, aes(x = CHM)) +
+  geom_histogram(bins = 30, fill = "gray70", color = "white") +
   theme_classic()+
-  labs(x = "Canopy Height (m)", 
-       y = expression(Frequency ~ "x" ~ 10^6)) +
-  theme(axis.text = element_text(family = "Times New Roman", size = 6),
-        axis.title = element_text(family = "Times New Roman", size = 6),
+  labs(x = "LiDAR Canopy Height (m)", 
+       y = expression(Frequency)) +
+  theme(axis.text = element_text(family = "Times New Roman", size = 4),
+        axis.title = element_text(family = "Times New Roman", size = 4),
+        axis.line = element_line(linewidth = 0.2),
+        axis.ticks = element_line(linewidth = 0.2),
         panel.grid.major = element_blank(),
         panel.grid.minor = element_blank()))
 
 
 # Create the 3m histogram plot
-(CHM.10m.PS.plot <- ggplot(data = df_PScope_10m, aes(x = CHM)) +
-    geom_histogram(bins = 10, fill = "gray70", color = "white") +
+(CHM.10m.PS.plot <- ggplot(data = df_PS.10m, aes(x = CHM)) +
+    geom_histogram(bins = 30, fill = "gray70", color = "white") +
     theme_classic()+
-    labs(x = "Canopy Height (m)", 
-         y = expression(Frequency ~ "x" ~ 10^6)) +
-    theme(axis.text = element_text(family = "Times New Roman", size = 6),
-          axis.title = element_text(family = "Times New Roman", size = 6),
+    labs(x = "LiDAR Canopy Height (m)", 
+         y = expression(Frequency)) +
+    theme(axis.text = element_text(family = "Times New Roman", size = 4),
+          axis.title = element_text(family = "Times New Roman", size = 4),
+          axis.line = element_line(linewidth = 0.2),
+          axis.ticks = element_line(linewidth = 0.2),
           panel.grid.major = element_blank(),
           panel.grid.minor = element_blank()))
 
 CHM.3m.PS.plot + CHM.10m.PS.plot
 
-ggsave(file="CHM.PS.plots.png", dpi = 600)
+ggsave(file="CHM.hist.plots.png", dpi = 600)

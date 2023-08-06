@@ -11,6 +11,7 @@ library(terra)
 library(ggpmisc)
 library(progressr)
 library(mlr3pipelines)
+library(mlr3tuningspaces)
 
 set.seed(1234)
 
@@ -18,54 +19,58 @@ set.seed(1234)
 data_path <- "/raid/home/bp424/Documents/MTHM603/Data"
 
 # load in the data files ----------------------------------------------------
-cube <- rast(file.path(data_path,"S2_comb_data.tif"))
+s2.cube <- rast(file.path(data_path,"S2_comb_data.tif"))
+PScope_3m.cube <- rast(file.path(data_path,"PScope_3m.tif"))
+PScope_10m.cube <- rast(file.path(data_path,"PScope_10m.tif"))
+comb_cube <- rast(file.path(data_path, "comb_cube.tif"))
+
 df_s2 <- read_csv(file.path(data_path, "df_S2.10m_final.csv")) #sentinel 2 - 10m
 df_PS.3m <- read_csv(file.path(data_path, "PScope_3m_df.csv")) #PlanetScope - 3m
 df_PS.10m <- read_csv(file.path(data_path, "df_PScope_10m.csv")) #PlanetScope - 10m
 df_comb <- read_csv(file.path(data_path, "combined_df.csv")) #combined data - 10m 
 
+
 # Define your regression task with spatial-temporal components
 task_rf <- mlr3spatiotempcv::TaskRegrST$new(
-  id = "kat_base_CHM.S2",
-  backend = df_s2,
+  id = "kat_base_CHM.PS",
+  backend = df_comb, #change this depending on the task you are running
   target = "CHM",
   coordinate_names = c("x", "y"),
   extra_args = list(
-    coords_as_features = FALSE,
-    crs = terra::crs(cube)
+    coords_as_features = FALSE, #excludes x and y coordinates from 
+    crs = terra::crs(comb_cube)
   )
 )
 
-
 #define a resampling plan
-resample_rf <- mlr3::rsmp("repeated_spcv_coords", folds = 11, repeats=2)
+resampling_rf <- mlr3::rsmp("repeated_spcv_coords", folds = 11, repeats=2)
 
-# define the random forest learner ----------------------------------------
-lrn_rf<- lrn("regr.ranger", importance = "impurity")
-
-.lrn_rf <- lrn("regr.ranger", predict_type = "response",
-               mtry = to_tune(lower = 4, upper = 23),
-               num.trees = to_tune(lower = 500, upper = 2500),
-               sample.fraction = to_tune(lower = 0.5, upper = 0.8),
-               max.depth = to_tune(lower = 20, upper = 100),
-               min.node.size = to_tune(lower = 20, upper = 100))
+#create learner with hyperparameter tuning in place
+ranger_tune_lrnr <- lrn("regr.ranger", predict_type = "response", importance = "impurity", 
+                        mtry = to_tune(lower = 1, upper = ceiling(sqrt(task_rf$ncol - 1))),
+                        sample.fraction = to_tune(lower = 0.5, upper = 1.0),
+                        min.node.size = to_tune(c(1,3,5,10)),
+                        replace = to_tune(c(TRUE, FALSE)))
+                        
+#create base learner for the importance 
+rf_lrn <- mlr3::lrn("regr.ranger", predict_type = "response", importance = "impurity")
 
 lrnr_graph <-
-  po("subsample", frac = 0.2)%>>%
-  po("filter", filter = flt("importance", learner = lrn_rf), 
-     filter.frac = to_tune(0.1, 0.5))%>>%
-  .lrn_rf
+  po("subsample", frac = 0.001) %>>%
+  po("filter", filter = flt("importance", learner = rf_lrn), 
+     filter.frac = to_tune(0.3,0.8))%>>%
+  ranger_tune_lrnr
 
 plot(lrnr_graph)
 
-combined_learner <- mlr3::as_learner(lrnr_graph)
+combined_learner <- as_learner(lrnr_graph)
 
 at <- auto_tuner(
-  tuner = tnr("random_search"),
+  tuner = tnr("mbo"), #Bayesian optimization tuner
   learner = combined_learner,
-  resampling = resample,
-  measure=msr("regr.rsq"), 
-  term_evals = 20)
+  resampling = resampling_rf,
+  measure=msr("regr.rmse"), 
+  term_evals = 10)
 
 # Optimize feature subset and fit final model
 future::plan("multisession", workers = 10)
@@ -76,18 +81,48 @@ progressr::with_progress(expr = {
 
 # resample_rf ------------------------------------------------------------
 
+tr <- at$tuning_result
+
+tr <- unlist(tr$learner_param_vals, recursive = FALSE)
+
+
+
+
+learner_rf_update <- lrn("regr.ranger", predict_type = "response", importance = "impurity", 
+                                             mtry = tr$regr.ranger.mtry,
+                                             sample.fraction = tr$regr.ranger.sample.fraction,
+                                             min.node.size = as.numeric(tr$regr.ranger.min.node.size),
+                                             replace = tr$regr.ranger.replace)
+
+
+lrnr_graph <-
+  po("subsample", frac = 0.2) %>>%
+  po("filter", filter = flt("importance", learner = rf_lrn), 
+     filter.frac = tr$importance.filter.frac) %>>%
+  learner_rf_update
+
+plot(lrnr_graph)
+
+combined_learner <- as_learner(lrnr_graph)
+
 resample_rf <- progressr::with_progress(expr ={
   mlr3::resample(
-    task = task,
-    learner = at$learner,
-    resampling = resample, 
+    task = task_rf,
+    learner = combined_learner,
+    resampling = resampling_rf, 
     store_models = FALSE,
     encapsulate = "evaluate"
   )
 })
 
+importance <- resample_rf$learner$timings
+
+importance_table <- data.table(
+  Names = names(importance),
+  Numbers = importance
+)
+importance_table
 # evaluate ----------------------------------------------------------------
-#evaluate
 dt <- as.data.table(resample_rf$prediction()) 
 
 # Calculate predictive measures: 
@@ -101,19 +136,11 @@ cat("RMSE:", rmse_value, "\n")
 cat("MAE:", mae_value, "\n")
 cat("R-squared (rsq):", rsq_value, "\n")
 
-
-metric_scores <- resample_rf$aggregate(measure = c(
-  mlr3::msr("regr.bias"),
-  mlr3::msr("regr.rmse"),
-  mlr3::msr("regr.rsq"),
-  mlr3::msr("regr.mae")))
-
-metric_scores
 # visualise ---------------------------------------------------------------
 
 resample_rf$prediction() %>%
   ggplot() +
-  aes(x = response, y = truth) +
+  aes(x = truth, y = response) +
   geom_bin_2d(binwidth = 0.3) +
   scale_fill_viridis_c(
     trans = scales::yj_trans(0.1),
@@ -123,6 +150,17 @@ resample_rf$prediction() %>%
   ) +
   geom_abline(slope = 1) +
   theme_light() +
-  labs(x = "Predicted Canopy Height (m)", y = "Observed Canopy Height (m)")
+  labs(x = "LiDAR Canopy Height (m)", y = "Predicted Canopy Height (m)")
 
+
+# train the model  --------------------------------------------------------
+
+
+resample_rf$learner$train(task_rf)
+
+# predict the full model --------------------------------------------------
+
+p <- terra::predict(s2.cube, resample_rf$learner, na.rm = TRUE)
+
+plot(p)
 

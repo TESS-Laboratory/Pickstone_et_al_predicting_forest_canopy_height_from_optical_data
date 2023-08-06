@@ -12,6 +12,9 @@ library(patchwork)
 # Define Data Paths -------------------------------------------------------
 #data_path <- "/Users/bri/Library/CloudStorage/OneDrive-UniversityofExeter/University/Dissertation/Data"
 data_path <- "/raid/home/bp424/Documents/MTHM603/Data"
+
+
+
 S2_df <- read_csv(file.path(data_path, "df_S2.10m_final.csv"))
 PS_10m_df <- read_csv(file.path(data_path, "df_PScope_10m.csv"))
 
@@ -33,3 +36,11 @@ combined_df <- left_join(S2_df_update, PS_10m_df, by = c("x", "y"))%>%
 
 write.csv(combined_df, file = "/raid/home/bp424/Documents/MTHM603/Data/combined_df.csv", row.names = FALSE)
 
+# Step 5: Convert back to spatial raster
+comb_cube <- rast(cube, nlyr=ncol(combined_df))
+values(comb_cube) <- as.matrix(combined_df)
+names(comb_cube) <- colnames(combined_df)
+print(names(comb_cube))
+
+writeRaster(comb_cube, filename = "/raid/home/bp424/Documents/MTHM603/Data/comb_cube.tif", 
+            overwrite = TRUE)
