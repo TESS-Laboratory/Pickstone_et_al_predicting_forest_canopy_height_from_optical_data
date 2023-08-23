@@ -1,3 +1,6 @@
+##This script has been written for completing MLR on all 
+##four different datasources 
+##it includes feature selection using find correlation 
 
 # load in packages --------------------------------------------------------
 library(mlr3verse)
@@ -52,10 +55,12 @@ task_lm <- TaskRegrST$new(
 
 # Define the learner and resampling plan
 resample_lm <- mlr3::rsmp("repeated_spcv_coords", folds = 10, repeats = 2)
+
+#define simple liner regression learner 
 learner_lm <- lrn("regr.lm") #linear regression learner
 
 #set up a pipeline  of find_correlation, so it filters through a correlation 
-#matrix
+#matrix between 0.3 and 0.8 of the filters 
 lrnr_graph <-
   po("filter", filter = flt("find_correlation"), 
      filter.frac = to_tune(0.3,0.8))%>>%
@@ -83,7 +88,6 @@ progressr::with_progress(expr = {
 at$learner$state$model$find_correlation
 
 # Complete the resampling plan --------------------------------------------
-
 resample_lm <- progressr::with_progress(expr ={
   mlr3::resample(
     task = task_lm,
@@ -93,7 +97,6 @@ resample_lm <- progressr::with_progress(expr ={
     encapsulate = "evaluate"
   )
 })
-
 
 #evaluate using micro averaging 
 dt <- as.data.table(resample_lm$prediction()) 
@@ -138,14 +141,13 @@ resample_lm$prediction() %>%
   scale_y_continuous(breaks = seq(-10, 40, by = 10), limits = c(-10, 40))
 
 
-ggsave(file="PS3_MLR.png", dpi = 600)
-
 # train the model  --------------------------------------------------------
 at$learner$train(task_lm)
 
 # predict the full model and plot --------------------------------------------------
 p <- terra::predict(PScope_3m.cube, at$learner, na.rm = TRUE)
 
+#save this as spatraster to be plotted later 
 writeRaster(p, filename = "/raid/home/bp424/Documents/MTHM603/Data/PS3_MLR_predict.tif", 
             overwrite = TRUE)
 
@@ -163,5 +165,3 @@ writeRaster(p, filename = "/raid/home/bp424/Documents/MTHM603/Data/PS3_MLR_predi
       na.value = 'transparent',
       limits = c(0, 55), 
       guide = guide_colorbar(barwidth = .5, barheight = 2)))
-
-ggsave(file="PS3_CHM_MLR_plot.png", dpi = 600)

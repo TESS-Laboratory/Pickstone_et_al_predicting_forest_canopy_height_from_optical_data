@@ -1,3 +1,6 @@
+##This code is used to create a visualisation of the performance of all 
+##four data sources and machine learning algorithms using RMSE, MAE, R2 and time
+
 library(tidyverse)
 library(patchwork)
 
@@ -8,7 +11,7 @@ RMSE <- data.frame(
   Data_Source = c("PS (3m)", "PS (10m)", "S2", "Combined"),
   MLR = c(5.76, 4.40, 3.70, 3.73),
   RF = c(5.50, 3.97, 3.52, 3.47),
-  CNN = c(5.49, 3.95, 3.47, 3.50)
+  CNN = c(5.53, 3.95, 3.47, 3.50)
 )
 
 RMSE <- pivot_longer(RMSE, cols = c("MLR", "RF", "CNN"),
@@ -37,8 +40,8 @@ theme_set(theme_minimal() +
 r2_data <- tibble(
   Data_Source = c("PS (3m)", "PS (10m)", "S2", "Combined"),
   MLR = c(0.37, 0.50, 0.65, 0.64),
-  RF = c(0.42, 0.6, 0.68, 0.69),
-  CNN = c(0.43, 0.60, 0.69, 0.68)
+  RF = c(0.43, 0.6, 0.68, 0.69),
+  CNN = c(0.42, 0.60, 0.69, 0.68)
 )
 
 # Reshape the data
@@ -66,7 +69,7 @@ MAE_data <- tibble(
   Data_Source = c("PS (3m)", "PS (10m)", "S2", "Combined"),
   MLR = c(4.61, 3.48, 2.89, 2.90),
   RF = c(4.27, 3.01, 2.63, 2.58),
-  CNN = c(4.24, 3.05, 2.64, 2.68)
+  CNN = c(4.32, 3.05, 2.64, 2.68)
 )
 
 # Reshape the data
@@ -91,9 +94,9 @@ MAE_long <- pivot_longer(MAE_data, cols = c("MLR", "RF", "CNN"),
 # Create a new tibble for TIME
 time_data <- tibble(
   Data_Source = c("PS (3m)", "PS (10m)", "S2", "Combined"),
-  MLR = c(1.4, 1.52, 1.54, 1.73),
-  RF = c(610, 830, 223, 246),
-  CNN = c(2723.23, 106.4, 199.8, 201.85)
+  MLR = c(34.41, 3.99, 3.82, 5.25),
+  RF = c(450.35, 31.48, 34.23, 33.53),
+  CNN = c(2723.23, 126.86, 77.35, 155.65)
 )
 
 # Reshape the data
@@ -115,5 +118,5 @@ time_long <- pivot_longer(time_data, cols = c("MLR", "RF", "CNN"),
 
 MAE_plot + RMSE.plot + r2_plot + time_plot
 
-ggsave(file="Performance_models.png", dpi = 600)
+ggsave(file="Performance_models.png", width = 7.10, height = 5.6, dpi = 600)
 

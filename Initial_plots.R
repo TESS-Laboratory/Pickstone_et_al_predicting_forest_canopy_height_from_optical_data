@@ -8,20 +8,23 @@ library(sf)
 library(tidyverse)
 library(raster)
 library(patchwork)
+library(viridisLite)
 
-# load in data ------------------------------------------------------------
-
+# set data path ------------------------------------------------------------
 data_path <- "/raid/home/bp424/Documents/MTHM603/Data"
+
+#load in data
 PScope_3m_cube <- rast(file.path(data_path,"PScope_3m.tif"))
 S2_cube <- rast(file.path(data_path,"S2_comb_data.tif")) #Sentinel 2 - 10m 
 kat_planet <- rast(file.path(data_path,"Katingan-Comp-22-median.tif"))
 
-# Canopy Height Plot ------------------------------------------------------
 # Read LiDAR dtm and dsm file 
 dtm.LiDAR <- rast(file.path(data_path,"Original-DEMS/katingan_DEMS/katingan_DTM.tif"))
 dsm <- rast(file.path(data_path,"Original-DEMS/katingan_DEMS/katingan_DSM.tif"))
 
-# Calculate Canopy Height Model  ------------------------------------------
+# Canopy Height Plot ------------------------------------------------------
+
+# Calculate Canopy Height Model
 CHM <- dsm - dtm.LiDAR
 names(CHM) <- "CHM"
 
@@ -29,15 +32,10 @@ names(CHM) <- "CHM"
 CHM.3m <- project(CHM, PScope_3m_cube)
 CHM.3m <- mask(CHM.3m, PScope_3m_cube)
 
-CHM.3m
 #plot the canopy height model
-# Load required libraries
-library(ggplot2)
-library(ggspatial)
-library(viridisLite)
 
 # Create the plot
-CHM.3mplot <- ggplot() + 
+(CHM.3mplot <- ggplot() + 
   theme_bw() +
   geom_spatraster(data = CHM.3m, aes(fill = lyr1)) +  # Use aes() here to specify the fill color based on 'value'
   theme(
@@ -53,18 +51,15 @@ CHM.3mplot <- ggplot() +
     na.value = 'transparent',
     limits = c(0, 55), 
     guide = guide_colorbar(barwidth = .5, barheight = 2)
-  )
+  ))
 
-# Print the plot
-print(CHM.3mplot)
 
 #project the CHM to 10m 
 # planet labs plot --------------------------------------------------------
 CHM.10m <- project(CHM, S2_cube)
 CHM.10m <- mask(CHM.10m, S2_cube)
 
-# Create the plot for lyr1
-# Create the plot for lyr1
+# Create the plot
 (CHM.10mplot <- ggplot() + 
     theme_bw() +
     geom_spatraster(data = CHM.10m, aes(fill = lyr1)) +
@@ -131,7 +126,7 @@ rgb_plot <- function(.x){
     coord_sf(crs = 4326)
 }
 
-
+#plot the rgb_plot onto the 3 m PlanetScope data
 (planet.plot.3m <- rgb_plot(projected_cube.3m))
 
 
@@ -165,7 +160,6 @@ S2_to_rgb_df <- function(r, .min=0.001, .max=0.13, .yr=2021){
 #' @return A ggplot
 #' 
 
-
 rgb_plot <- function(.x){
   S2_df <- S2_to_rgb_df(.x[[c("red", "green", "blue")]]) |>  # run the function to get a dataframe
     tidyr::drop_na()
@@ -185,6 +179,7 @@ rgb_plot <- function(.x){
     coord_sf(crs = 4326)
 }
 
+#project the rgb plot onto the Sentinel-2 spatraster 
 (S2_plot.10m <- rgb_plot(projected_cube.S2))
 
 

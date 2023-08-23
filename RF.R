@@ -1,3 +1,7 @@
+##This script has been written for completing Random Forest on all 
+##four different datasources 
+##it includes feature selection and hyperparameter tuning 
+
 library(mlr3)
 library(mlr3tuning)
 library(mlr3verse)
@@ -34,17 +38,17 @@ df_comb <- read_csv(file.path(data_path, "combined_df.csv")) #combined data - 10
 
 # Define your regression task with spatial-temporal components
 task_rf <- mlr3spatiotempcv::TaskRegrST$new(
-  id = "kat_base_CHM.PS",
+  id = "kat_base_CHM.PS3",
   backend = df_PS.3m, #change this depending on the task you are running
   target = "CHM",
   coordinate_names = c("x", "y"),
   extra_args = list(
     coords_as_features = FALSE, #excludes x and y coordinates from 
-    crs = terra::crs(PScope_3m.cube)
+    crs = terra::crs(PScope_3m.cube) #change this depending on the dataframe
   )
 )
 
-#define a resampling plan
+#define a resampling plan 
 resampling_rf <- mlr3::rsmp("repeated_spcv_coords", folds = 10, repeats=2)
 
 #create learner with hyperparameter tuning in place
@@ -57,6 +61,8 @@ ranger_tune_lrnr <- lrn("regr.ranger", predict_type = "response", importance = "
 #create base learner for the importance 
 rf_lrn <- mlr3::lrn("regr.ranger", predict_type = "response", importance = "impurity")
 
+#select a subsample of data to complete this on, and set a filter fraction 
+#for the features to be selected. This will select between 30% and 80% of features
 lrnr_graph <-
   po("subsample", frac = 0.001) %>>%
   po("filter", filter = flt("importance", learner = rf_lrn), 
@@ -65,8 +71,10 @@ lrnr_graph <-
 
 plot(lrnr_graph)
 
+#create learner from pipeline
 combined_learner_feature <- as_learner(lrnr_graph)
 
+#set up tuner 
 at <- auto_tuner(
   tuner = tnr("mbo"), #Bayesian optimization tuner
   learner = combined_learner_feature,
@@ -95,6 +103,7 @@ importance_table <- data.table(
   Numbers = importance
 )
 
+#export as csv, so it can be used later if needed 
 write.csv(importance_table, file = "/raid/home/bp424/Documents/MTHM603/Data/importance_PS3_2.csv", row.names = FALSE)
 
 
@@ -117,16 +126,15 @@ ggplot(importance_table, aes(x = Numbers, y = Names)) +
     text = element_text(size = 4, family = "Times New Roman")) +
   scale_y_discrete(limits = rev(unique(importance_table$Names)))
 
-#svae plot
+#save plot
 ggsave(file="feature_selection_PS3_2.png", dpi = 600)
 
 # resample_rf ------------------------------------------------------------
 #extract tuning results from previous sub sample
 tr <- at$tuning_result
-
 tr <- unlist(tr$learner_param_vals, recursive = FALSE)
 
-#add hyperparameter tunign result to new learner
+#add hyperparameter tuning result to new learner
 learner_rf_update <- lrn("regr.ranger", predict_type = "response", importance = "impurity", 
                                              mtry = tr$regr.ranger.mtry,
                                              sample.fraction = tr$regr.ranger.sample.fraction,
@@ -134,33 +142,19 @@ learner_rf_update <- lrn("regr.ranger", predict_type = "response", importance = 
                                              replace = tr$regr.ranger.replace)
 
 
-learner_rf_update <- lrn("regr.ranger", predict_type = "response", importance = "impurity", 
-                         mtry = 4,
-                         sample.fraction = 0.5911906,
-                         min.node.size = 5,
-                         replace = TRUE)
-
-
-#set a fraction of the learner
+#set a fraction of the learner - this will run on 5% of the data
 lrnr_graph <-
   po("subsample", frac = 0.05) %>>%
   po("filter", filter = flt("importance", learner = rf_lrn), 
      filter.frac = tr$importance.filter.frac) %>>%
   learner_rf_update
 
-
-lrnr_graph <-
-  po("subsample", frac = 0.05) %>>%
-  po("filter", filter = flt("importance", learner = rf_lrn), 
-     filter.frac = 0.64) %>>%
-  learner_rf_update
-
-
 plot(lrnr_graph)
 
+#turn pipeline into learner
 combined_learner <- as_learner(lrnr_graph)
 
-#resample the task 
+#resample the task using the resampling strategy set above (10 folds, 2 repeats)
 resample_rf <- progressr::with_progress(expr ={
   mlr3::resample(
     task = task_rf,
@@ -212,9 +206,6 @@ resample_rf$prediction() %>%
   scale_x_continuous(breaks = seq(0, 40, by = 10)) +  # Set x-axis tick marks to go up in 10s
   scale_y_continuous(breaks = seq(-10, 40, by = 10), limits = c(-10, 40))
 
-
-ggsave(file="plot.P3_RF.png", dpi = 600)
-
 # train the model  --------------------------------------------------------
 
 combined_learner$train(task_rf)
@@ -226,6 +217,7 @@ p <- terra::predict(PScope_3m.cube, combined_learner, na.rm = TRUE)
 writeRaster(p, filename = "/raid/home/bp424/Documents/MTHM603/Data/PS3_RF_predict.tif", 
             overwrite = TRUE)
 
+#see how the new canopy height model looks 
 (CHM.plot <- ggplot() + 
     theme_bw() +
     geom_spatraster(data = p)+
@@ -240,8 +232,5 @@ writeRaster(p, filename = "/raid/home/bp424/Documents/MTHM603/Data/PS3_RF_predic
       na.value = 'transparent',
       limits = c(0, 55), 
       guide = guide_colorbar(barwidth = .5, barheight = 2)))
-
-#save the plot
-ggsave(file="PS3_CHM_rf_plot.png", dpi = 600)
 
 

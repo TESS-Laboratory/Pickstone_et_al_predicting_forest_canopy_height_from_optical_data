@@ -1,3 +1,5 @@
+##This code is written to display the predicted vs truth (LiDAR canopy height)
+##of each datasource and machine learning algorithm 
 library(tidyverse)
 library(patchwork)
 
@@ -8,30 +10,30 @@ data_path <- "/raid/home/bp424/Documents/MTHM603/Data"
 df_PS.3m <- read_csv(file.path(data_path, "PScope_3m_df.csv")) #PlanetScope - 3m
 df_PS.10m <- read_csv(file.path(data_path, "df_PScope_10m.csv")) #PlanetScope - 10m
 
-
 #read in PlanetScope 3m files 
 P3_MLR <-read_csv(file.path(data_path, "PlanetScope 3m/dt_MLR_PS3.csv"))
 P3_RF <- read_csv(file.path(data_path, "PlanetScope 3m/dt_RF_P3.csv"))
-P3_CNN <- read_csv(file.path(data_path, "PlanetScope 3m/CNN_3m.csv"))
-P3_CNN <- P3_CNN %>%
+P3_CNN <- read_csv(file.path(data_path, "PlanetScope 3m/CNN_3m.csv"))%>%
   select(truth = truth_renorm, response = response_renorm)
 
 
 #read in PlanetScope 10m files
 P10_MLR <- read_csv(file.path(data_path, "PlanetScope 10m/dt_MLR_PS10.csv"))
-P10_RF <- read_csv(file.path(data_path, "PlanetScope 10m/dt_RF_PS10.csv"))
-P10_CNN <- read_csv(file.path(data_path, "PlanetScope 10m/CNN_PS10.csv"))
+P10_RF <- read_csv(file.path(data_path, "PlanetScope 10m/dt_RF_P10.csv"))
+P10_CNN <- read_csv(file.path(data_path, "PlanetScope 10m/CNN_PS10.csv"))%>%
+  select(truth = truth_renorm, response = response_renorm)
 
 #read in Sentinel-2 files
 S2_MLR <- read_csv(file.path(data_path, "Sentinel-2/dt_MLR_S2.csv"))
-S2_RF <- read_csv(file.path(data_path, "Sentinel-2/dt_RF_s2.csv"))
-S2_CNN <- read_csv(file.path(data_path, "Sentinel-2/CNN_S2.csv"))
-
+S2_RF <- read_csv(file.path(data_path, "Sentinel-2/dt_RF_S2.csv"))
+S2_CNN <- read_csv(file.path(data_path, "Sentinel-2/CNN_S2.csv")) %>%
+  select(truth = truth_renorm, response = response_renorm)
 
 #read in combined files
 comb_MLR <- read_csv(file.path(data_path, "Combined/dt_MLR_combined.csv"))
 comb_RF <- read_csv(file.path(data_path, "Combined/dt_RF_comb.csv"))
-comb_CNN <- read_csv(file.path(data_path, "Combined/CNN_comb.csv"))
+comb_CNN <- read_csv(file.path(data_path, "Combined/CNN_comb.csv"))%>%
+  select(truth = truth_renorm, response = response_renorm)
 
 
 
@@ -79,55 +81,81 @@ P3_CNN_Plot <- create_plot(P3_CNN, P3_CNN_breaks)
     labs(x = "LiDAR Canopy Height (m)", 
          y = "Frequency") +
     theme(
-      axis.text = element_text(family = "Times New Roman", size = 8),
-      axis.title = element_text(family = "Times New Roman", size = 8),
+      axis.text = element_text(family = "Times New Roman", size = 10),
+      axis.title = element_text(family = "Times New Roman", size = 10),
       axis.line = element_line(linewidth = 0.2),
       axis.ticks = element_line(linewidth = 0.2),
-      legend.position = c(0.85, 0.85),  
-      legend.justification = c(1, 1),  # Top-right corner
-      legend.title = element_text(family = "Times New Roman", size = 8),  # Legend title font
-      legend.text = element_text(family = "Times New Roman", size = 6),
       legend.key.size = unit(0.6, "lines"),  
       panel.grid.major = element_blank(),
       panel.grid.minor = element_blank()
     ))
 
 # Arrange the plots using patchwork
-(combined_plot <- (P3_MLR_Plot + P3_RF_Plot + P3_CNN_Plot + CHM.plot.3m) + 
+(P3_MLR_Plot + P3_RF_Plot + P3_CNN_Plot + CHM.plot.3m) + 
   plot_layout(nrow = 2))
 
-ggsave(file = "P3_scatterplots.png", width = 7.10, height = 5.6, dpi = 600)
-
+ggsave(file = "P3_scatterplots.png", width = 8.10, height = 6.3, dpi = 600)
 # Plot PlanetScope 10m  ---------------------------------------------------
-P10_MLR_breaks = c(100, 1000, 10000, 40000)
-P10_RF_breaks <- c(100, 1000, 10000, 50000)
-P10_CNN_breaks <- c(100, 1000, 10000, 80000)
+P10_MLR_breaks = c(100, 1000, 5000)
+P10_RF_breaks <- c(100, 1000, 10000)
+P10_CNN_breaks <- c(100, 1000, 5000)
 
-P10_MLR_Plot <- create_plot(P3_MLR, P10_MLR_breaks)
-P10_RF_Plot <- create_plot(P10_RF, P10_RF_breaks)
-P10_CNN_Plot <- create_plot(P10_CNN, P10_CNN_breaks)
+
+(P10_MLR_Plot <- create_plot(P10_MLR, P10_MLR_breaks))
+(P10_RF_Plot <- create_plot(P10_RF, P10_RF_breaks))
+(P10_CNN_Plot <- create_plot(P10_CNN, P10_CNN_breaks))
+
+#plot 10 m CHM 
+(CHM.plot.10m <- ggplot() +
+    geom_density(data = df_PS.10m, aes(x = CHM), fill = "#2f9aa0ff", alpha = 0.2) +
+    theme_classic() +
+    labs(x = "LiDAR Canopy Height (m)", 
+         y = "Frequency") +
+    theme(
+      axis.text = element_text(family = "Times New Roman", size = 10),
+      axis.title = element_text(family = "Times New Roman", size = 10),
+      axis.line = element_line(linewidth = 0.2),
+      axis.ticks = element_line(linewidth = 0.2),
+      legend.key.size = unit(0.6, "lines"),  
+      panel.grid.major = element_blank(),
+      panel.grid.minor = element_blank()
+    ))
+
+
+(combined_plot.P10 <- (P10_MLR_Plot + P10_RF_Plot + P10_CNN_Plot + CHM.plot.10m) + 
+    plot_layout(nrow = 2))
+
+ggsave(file = "P10_scatterplots.png", width = 8.10, height = 6.3, dpi = 600)
 
 # Plot Sentinel-2 ---------------------------------------------------------
+S2_MLR_breaks = c(100, 1000, 4000)
+S2_RF_breaks <- c(100, 1000, 10000)
+S2_CNN_breaks <- c(100, 1000, 5000)
+
+
+(S2_MLR_Plot <- create_plot(S2_MLR, S2_MLR_breaks))
+(S2_RF_Plot <- create_plot(S2_RF, S2_RF_breaks))
+(S2_CNN_Plot <- create_plot(S2_CNN, S2_CNN_breaks))
+
+
+(combined_plot.S2 <- (S2_MLR_Plot + S2_RF_Plot + S2_CNN_Plot + CHM.plot.10m) + 
+    plot_layout(nrow = 2))
+
+ggsave(file = "S2_scatterplots.png", width = 8.10, height = 6.3, dpi = 600)
 
 
 # Plot Combined -----------------------------------------------------------
+comb_MLR_breaks = c(100, 1000, 4000)
+comb_RF_breaks <- c(100, 1000, 10000)
+comb_CNN_breaks <- c(100, 1000, 5000)
+
+(comb_MLR_Plot <- create_plot(comb_MLR, comb_MLR_breaks))
+(comb_RF_Plot <- create_plot(comb_RF, comb_RF_breaks))
+(comb_CNN_Plot <- create_plot(comb_CNN, comb_CNN_breaks))
 
 
-# Create a function to generate the heatmap
-create_heatmap <- function(data, title) {
-  ggplot(data, aes(x = truth, y = response)) +
-    geom_bin2d(binwidth = c(1, 1), bins = 100) +
-    scale_fill_viridis_c(option = "G") +
-    labs(title = title, fill = "Count") +
-    theme_minimal() +
-    theme(legend.position = "right")
-}
+(combined_plot.comb <- (comb_MLR_Plot + comb_RF_Plot + comb_CNN_Plot + CHM.plot.10m) + 
+    plot_layout(nrow = 2))
 
-# Create individual heatmaps for each model
-mlr_heatmap <- create_heatmap(P3_MLR, "MLR Model")
-rf_heatmap <- create_heatmap(P3_RF, "Random Forest Model")
-cnn_heatmap <- create_heatmap(P3_CNN, "CNN Model")
-
-combined_plot <- plot_grid(mlr_heatmap, rf_heatmap, cnn_heatmap, ncol = 3, 
-                           align = "hv", labels = "AUTO")
+ggsave(file = "comb_scatterplots.png", width = 8.10, height = 6.3, dpi = 600)
 

@@ -1,3 +1,6 @@
+##this code was written by Dr Hugh Graham as an example of how to calculate 
+#vegetation spectral indices 
+
 library(terra)
 library(viridisLite)
 
