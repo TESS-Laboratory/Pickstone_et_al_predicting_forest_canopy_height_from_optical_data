@@ -31,10 +31,10 @@ partnership with Permian Global.
 **This repository contains the following scripts:**
 
 *Importing_S2.R* This script contains code for downloading the
-Sentinel-2 Data from the COG. This also includes the generation of the
-canopy height model from LiDAR, accessing the digital terrain model,
-calculation of topographic metrics, calculation of vegetation spectral
-indices, and the creation of the 10 m resolution data cube and table.
+Sentinel-2 Data from the COG defined. This also includes the generation
+of the canopy height model from LiDAR, accessing the digital terrain
+model, calculation of topographic metrics, calculation of vegetation
+spectral indices, and the creation of the 10 m resolution data cube an
 
 *Preprocessing.R* This script contains code for pre-processing both the
 LiDAR data and optical Planet Labs data. This includes generation of the
@@ -61,5 +61,7 @@ prediction of the canopy height model
 *RF.R* main script for undertaking Random Forest for prediction of the
 canopy height model
 
-*CNN_2D.R* main script for undertaking a Convolutional Neural Network
-for prediction of the canopy height model
+*resample_2DCNN.R* main script for undertaking a Convolutional Neural
+Network for prediction of the canopy height model
+
+*Performance_models.R*

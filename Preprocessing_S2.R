@@ -18,7 +18,7 @@ bbox_wgs84 <- bbox |>
   st_transform("EPSG:4326") |>
   st_bbox()
 
-#pecify the STAC-API endpoint URL and query all available 
+#specify the STAC-API endpoint URL and query all available 
 #images for our area and time of interest.
 s = stac("https://earth-search.aws.element84.com/v0")
 items = s |>
@@ -163,7 +163,6 @@ S2.10m <- terra::mask(S2.10m, kat_boundary)
 
 #make sure it has cropped
 plot(S2.10m$red)
-
 
 # do the band math --------------------------------------------------------
 

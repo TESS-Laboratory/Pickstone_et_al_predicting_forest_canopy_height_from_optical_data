@@ -87,6 +87,15 @@ model <- keras_model_sequential() %>%
   layer_dense(units = 1, activation = 'linear')  # Use 'linear' activation for regression
 
 
+model <- keras_model_sequential() %>%
+  layer_conv_2d(filters = 32, kernel_size = c(3,3), activation = 'relu', input_shape = c(10,10,50)) %>% 
+  layer_max_pooling_2d(pool_size = c(2, 2)) %>% 
+  layer_conv_2d(filters = 64, kernel_size = c(3,3), activation = 'relu') %>% 
+  layer_max_pooling_2d(pool_size = c(2, 2)) %>% 
+  layer_dropout(rate = 0.1) %>% 
+  layer_flatten() %>% 
+  layer_dense(units = 128, activation = 'relu') %>% 
+  layer_dense(units = 1, activation = 'linear')  # Use 'linear' activation for regression
 
 # Compile the model with adam
 model %>% 
@@ -137,6 +146,4 @@ rmse <- sqrt(mean((y_test_original - y_pred_original)^2))
 print(paste0("R-squared: ", sprintf("%.2f", rsq)))
 print(paste0("Mean Absolute Error: ", sprintf("%.2f", mae)))
 print(paste0("Root Mean Squared Error: ", sprintf("%.2f", rmse)))
-rsq
-mae
-rmse
+

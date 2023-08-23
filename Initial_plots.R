@@ -14,6 +14,7 @@ library(patchwork)
 data_path <- "/raid/home/bp424/Documents/MTHM603/Data"
 PScope_3m_cube <- rast(file.path(data_path,"PScope_3m.tif"))
 S2_cube <- rast(file.path(data_path,"S2_comb_data.tif")) #Sentinel 2 - 10m 
+kat_planet <- rast(file.path(data_path,"Katingan-Comp-22-median.tif"))
 
 # Canopy Height Plot ------------------------------------------------------
 # Read LiDAR dtm and dsm file 
@@ -21,30 +22,70 @@ dtm.LiDAR <- rast(file.path(data_path,"Original-DEMS/katingan_DEMS/katingan_DTM.
 dsm <- rast(file.path(data_path,"Original-DEMS/katingan_DEMS/katingan_DSM.tif"))
 
 # Calculate Canopy Height Model  ------------------------------------------
-
 CHM <- dsm - dtm.LiDAR
 names(CHM) <- "CHM"
 
+#crop the CHM to the Kat Boundary and 3m CHM
+CHM.3m <- project(CHM, PScope_3m_cube)
+CHM.3m <- mask(CHM.3m, PScope_3m_cube)
+
+CHM.3m
 #plot the canopy height model
-(CHM.plot <- ggplot() + 
+# Load required libraries
+library(ggplot2)
+library(ggspatial)
+library(viridisLite)
+
+# Create the plot
+CHM.3mplot <- ggplot() + 
   theme_bw() +
-  geom_spatraster(data = CHM)+
-  theme(axis.text = element_text(size = 3, family = "Times New Roman"), 
-        axis.text.x = element_text(angle = 45, hjust = 1),
-        legend.text = element_text(size = 3, family = "Times New Roman"), 
-        legend.title = element_text(size = 3, family = "Times New Roman"), 
-        axis.ticks = element_line(linewidth = 0.1))+
+  geom_spatraster(data = CHM.3m, aes(fill = lyr1)) +  # Use aes() here to specify the fill color based on 'value'
+  theme(
+    axis.text = element_text(size = 3, family = "Times New Roman"), 
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    legend.text = element_text(size = 3, family = "Times New Roman"), 
+    legend.title = element_text(size = 3, family = "Times New Roman"), 
+    axis.ticks = element_line(linewidth = 0.1)
+  ) +
   scale_fill_gradientn(
     name = "Canopy Height (m)",
     colors = viridisLite::viridis(n = 100),
     na.value = 'transparent',
     limits = c(0, 55), 
-    guide = guide_colorbar(barwidth = .5, barheight = 2)))
+    guide = guide_colorbar(barwidth = .5, barheight = 2)
+  )
 
+# Print the plot
+print(CHM.3mplot)
+
+#project the CHM to 10m 
 # planet labs plot --------------------------------------------------------
+CHM.10m <- project(CHM, S2_cube)
+CHM.10m <- mask(CHM.10m, S2_cube)
+
+# Create the plot for lyr1
+# Create the plot for lyr1
+(CHM.10mplot <- ggplot() + 
+    theme_bw() +
+    geom_spatraster(data = CHM.10m, aes(fill = lyr1)) +
+    theme(
+      axis.text = element_text(size = 3, family = "Times New Roman"), 
+      axis.text.x = element_text(angle = 45, hjust = 1),
+      legend.text = element_text(size = 3, family = "Times New Roman"), 
+      legend.title = element_text(size = 3, family = "Times New Roman"), 
+      axis.ticks = element_line(linewidth = 0.1), 
+      legend.position = "none") +
+    scale_fill_gradientn(
+      name = "Canopy Height (m)",
+      colors = viridisLite::viridis(n = 100),
+      na.value = 'transparent',
+      limits = c(0, 55)
+    ))
 
 # Planet Labs Plot ---------------------------------------------------------
 #first convert the coordinate reference system to match that of the LiDAR
+PScope_3m_cube <- mask(PScope_3m_cube, CHM.3m)
+
 projected_cube.3m <- project(PScope_3m_cube, crs("+proj=longlat +datum=WGS84"))
 
 PS_to_rgb_df <- function(r, .min=0.001, .max= 0.1){
@@ -91,10 +132,11 @@ rgb_plot <- function(.x){
 }
 
 
-planet.plot.3m <- rgb_plot(projected_cube.3m)
-planet.plot.3m
+(planet.plot.3m <- rgb_plot(projected_cube.3m))
+
 
 # Sentinel-2 Data plot ---------------------------------
+S2_cube <- mask(S2_cube, CHM.10m)
 projected_cube.S2 <- project(S2_cube, crs("+proj=longlat +datum=WGS84"))
 
 
@@ -143,12 +185,12 @@ rgb_plot <- function(.x){
     coord_sf(crs = 4326)
 }
 
-S2_plot.10m <- rgb_plot(projected_cube.S2)
+(S2_plot.10m <- rgb_plot(projected_cube.S2))
 
 
 # combine the two plots and save ------------------------------------------
 
-CHM.plot + planet.plot.3m + S2_plot.10m
+CHM.3mplot + planet.plot.3m + CHM.10mplot + S2_plot.10m
 
 
 ggsave(file="combined_data_plot.png", dpi = 600)

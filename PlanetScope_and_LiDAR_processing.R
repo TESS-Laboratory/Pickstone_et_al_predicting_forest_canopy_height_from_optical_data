@@ -192,35 +192,32 @@ df_PScope_10m <- as.data.frame(PScope_10m, xy=TRUE) %>%
 
 write.csv(df_PScope_10m, file = "/raid/home/bp424/Documents/MTHM603/Data/df_PScope_10m.csv", row.names = FALSE)
 
-# Create a histogram of canopy heights for 3m and 10m ------------------------------------
+# Create density plots of canopy heights for 1m, 3m and 10m ------------------------------------
+# Convert raster to tibble
+CHM_df_1m <- as.data.frame(CHM)
 
-# Create the 3m histogram plot
-(CHM.3m.PS.plot <- ggplot(data = df_PS.3m, aes(x = CHM)) +
-  geom_histogram(bins = 30, fill = "gray70", color = "white") +
-  theme_classic()+
-  labs(x = "LiDAR Canopy Height (m)", 
-       y = expression(Frequency)) +
-  theme(axis.text = element_text(family = "Times New Roman", size = 4),
-        axis.title = element_text(family = "Times New Roman", size = 4),
-        axis.line = element_line(linewidth = 0.2),
-        axis.ticks = element_line(linewidth = 0.2),
-        panel.grid.major = element_blank(),
-        panel.grid.minor = element_blank()))
-
-
-# Create the 3m histogram plot
-(CHM.10m.PS.plot <- ggplot(data = df_PS.10m, aes(x = CHM)) +
-    geom_histogram(bins = 30, fill = "gray70", color = "white") +
-    theme_classic()+
+(CHM.plots <- ggplot() +
+    geom_density(data = CHM_df_1m, aes(x = CHM, fill = "1"), alpha = 0.2) +
+    geom_density(data = df_PS.3m, aes(x = CHM, fill = "3"), alpha = 0.2) +
+    geom_density(data = df_PS.10m, aes(x = CHM, fill = "10"), alpha = 0.2) +
+    scale_fill_manual(values = c("1" = "gray60", '3' = '#ffcf20ff', '10' = '#2f9aa0ff'), 
+                      breaks = c("1", "3", "10"),
+                      name = 'Resolution (m)') +
+    theme_classic() +
     labs(x = "LiDAR Canopy Height (m)", 
-         y = expression(Frequency)) +
-    theme(axis.text = element_text(family = "Times New Roman", size = 4),
-          axis.title = element_text(family = "Times New Roman", size = 4),
-          axis.line = element_line(linewidth = 0.2),
-          axis.ticks = element_line(linewidth = 0.2),
-          panel.grid.major = element_blank(),
-          panel.grid.minor = element_blank()))
-
-CHM.3m.PS.plot + CHM.10m.PS.plot
+         y = "Frequency") +
+    theme(
+      axis.text = element_text(family = "Times New Roman", size = 8),
+      axis.title = element_text(family = "Times New Roman", size = 8),
+      axis.line = element_line(linewidth = 0.2),
+      axis.ticks = element_line(linewidth = 0.2),
+      legend.position = c(0.85, 0.85),  
+      legend.justification = c(1, 1),  # Top-right corner
+      legend.title = element_text(family = "Times New Roman", size = 8),  # Legend title font
+      legend.text = element_text(family = "Times New Roman", size = 6),
+      legend.key.size = unit(0.6, "lines"),  
+      panel.grid.major = element_blank(),
+      panel.grid.minor = element_blank()
+    ))
 
 ggsave(file="CHM.hist.plots.png", dpi = 600)
