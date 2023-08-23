@@ -1,3 +1,9 @@
+##This script has been written for completing CNN on all 
+##four different datasources 
+##as MLR3 is yet to develop CNN for regression tasks, the following 
+#code includes a resampling strategy defined within mlr3 and then the model completed
+#in tensor flow and keras 
+
 library(mlr3)
 library(mlr3spatiotempcv)
 library(tibble)
@@ -28,19 +34,19 @@ df_comb <- read_csv(file.path(data_path, "combined_df.csv")) #combined data - 10
 nfolds <- 10
 
 #normalise the data from 0 to 1 
-process <- preProcess(as.data.frame(df_PS.10m), method=c("range"))
+process <- preProcess(as.data.frame(df_PS.3m), method=c("range"))
 
-df_PS10_norm <- predict(process, as.data.frame(df_PS.10m))
+df_PS3_norm <- predict(process, as.data.frame(df_PS.3m))
 
 
 task_st <- TaskRegrST$new(
   id = "kat.CHM", 
-  backend = df_PS10_norm,  #change this to the dataframe you are interested in modelling
+  backend = df_PS3_norm,  #change this to the dataframe you are interested in modelling
   target = "CHM",
   coordinate_names = c("x", "y"), 
   extra_args = list(
     coords_as_features = FALSE, 
-    crs = terra::crs(PScope_10m.cube)  
+    crs = terra::crs(PScope_3m.cube)  
   )
 )
 
@@ -51,7 +57,7 @@ resampling <- mlr3::rsmp("repeated_spcv_coords", folds = nfolds, repeats = 2)
 # shows fold 1 only.
 (pl <- autoplot(resampling, task_st,
                 fold = 1,
-                crs = crs(PScope_10m.cube), point_size = 3, axis_label_fontsize = 10,
+                crs = crs(PScope_3m.cube), point_size = 3, axis_label_fontsize = 10,
                 plot3D = FALSE))
 
 
@@ -79,7 +85,7 @@ model %>% compile(
 
 # Extract input features (columns 1 to 27) and target variable (column 28)
 
-data.set <- as.matrix(df_PS10_norm)
+data.set <- as.matrix(df_PS3_norm)
 resampling_results <- purrr::map(1:nfolds, function(i) {
   # define the train and test ids for each fold
   train_ids <- resampling$train_set(i)
@@ -141,6 +147,12 @@ resampling_results <- purrr::map(1:nfolds, function(i) {
 # Minimum and maximum values of CHM (target variable) - to turn back from 
 #normalised data
 process$ranges
+
+#for 3 m resolution
+chm_min <- 0.007294444
+chm_max <- 47.593669891
+
+#for 10 m resolution 
 chm_min <- 0.1052788
 chm_max <- 41.3926506
 
@@ -210,16 +222,16 @@ write.csv(results_df, "/raid/home/bp424/Documents/MTHM603/Data/CNN_PS10.csv", ro
 #test on full set
 
 #to test on the full set 
-X_all <- df_PS10_norm[, 3:28]
+X_all <- df_PS3_norm[, 3:28]
 x_array_all <- array(as.matrix(X_all), dim = c(nrow(X_all), 10, 10, 26))
-x_array_all
-y_all <- df_PS10_norm[, 29]
+
+y_all <- df_PS3_norm[, 29]
 
 response_all = model %>% predict(x_array_all)
 response_all_original <- response_all * (chm_max - chm_min) + chm_min
 
 
-x_and_y <- df_PS.10m[, 1:2]
+x_and_y <- df_PS.3m[, 1:2]
 PS10_df_CNN <- cbind(x_and_y, response_all_original)
 
 PS10_cube <- as_spatraster(PS10_df_CNN, crs = crs(PScope_10m.cube))

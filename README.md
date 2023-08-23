@@ -91,7 +91,7 @@ following:
 
 -   **PlanetScope 3 m data table**: 17,405,911 rows x 29 columns
 
--    **PlanetScope 10 m data table:** 1,566,545 x 29 columns
+-   **PlanetScope 10 m data table:** 1,566,545 x 29 columns
 
 -   **Sentinel-2 data table:** 1,564,685 rows x 32 columns
 
