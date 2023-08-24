@@ -52,6 +52,9 @@ resolution
 image of the PlanetLabs data and Sentinel-2 data as well as the Canopy
 Height Model from LiDAR.
 
+*Map_Kat_Project.R* This script contains the code for generating a map
+of the study area
+
 *Spatial Autocorrelation.R* This script contains code for assessing
 spatial autocorrelation within the data, this includes the calculation
 of Moran's I metric and visualisation through a variogram. The code also
@@ -67,11 +70,18 @@ canopy height model
 *resample_2DCNN.R* main script for undertaking a Convolutional Neural
 Network for prediction of the canopy height model
 
-*Performance_models.R* This script
+*Performance_models.R* This script creates the bar chart of comparing
+the performance of models using RMSE, MAE, R2 and time (mins)
 
-*Scatterplots.R* This script
+*Scatterplots.R* This script creates the visualisation of comparing the
+predicted canopy height vs. the LiDAR derived Canopy Height of each data
+source and all three machine learning algorithms.
 
-*CHM.plots.R*
+*CHM.plots.R* This script creates the visualisation of the predicted
+Canopy Height Model and the difference in the Predicted Canopy Height
+and the LiDAR derived Canopy Height of the best performing PlanetScope
+3m, PlanetScope 10 m, Sentinel-2 10 m and combined data set at 10 m
+resolution.
 
 *Planet_Spectral_Indicies.R* This script is written by Dr Hugh Graham as
 an example of how to calculate vegetation spectral indices
@@ -83,9 +93,25 @@ testing different models/ feature selection
 
 **This repository contains the data within the "Data" folder:**
 
-This data is just a subsample of the data. As well as the data that is
-outlined above under "Data Sources" the full data contains the
-following:
+s*ample_P3.csv and sample_PS3cube.tif* contain the PlanetScope data at 3
+m resolution, which includes x and y coordinates, spectral bands,
+vegetation indices, topographic metrics and LiDAR-derived CHM
+
+s*ample_P10.csv and sample_PS10cube.tif* contain the PlanetScope data at
+10 m resolution, which includes x and y coordinates, spectral bands,
+vegetation indices, topographic metrics and LiDAR- derived CHM
+
+sample_S2*.csv and sample_S2cube.tif* contain the Sentinel-2 data at 10
+m resolution, which includes x and y coordinates, spectral bands,
+vegetation indices, topographic metrics and LiDAR- derived CHM
+
+*sample_comb.csv and sample_combcube.tif* contain the combined data of
+Sentinel-2 and PlanetScope data at 10 m resolution, which includes x and
+y coordinates, spectral bands, vegetation indices, topographic metrics
+and LiDAR- derived CHM
+
+This data is just a subsample of the data. The actual size of the data
+is noted below:
 
 **DataSize:**
 
