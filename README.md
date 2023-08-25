@@ -83,7 +83,7 @@ and the LiDAR derived Canopy Height of the best performing PlanetScope
 3m, PlanetScope 10 m, Sentinel-2 10 m and combined data set at 10 m
 resolution.
 
-*Planet_Spectral_Indicies.R* This script is written by Dr Hugh Graham as
+*Planet_Spectral_Indices.R* This script is written by Dr Hugh Graham as
 an example of how to calculate vegetation spectral indices
 
 **Archive folder** contains outdated and/or code that was used as
