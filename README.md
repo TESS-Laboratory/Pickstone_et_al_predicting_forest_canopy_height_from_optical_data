@@ -36,7 +36,7 @@ folder:**
 Sentinel-2 Data from the COG. This also includes the generation of the
 canopy height model from LiDAR, accessing the digital terrain model,
 calculation of topographic metrics, calculation of vegetation spectral
-indices, and the creation of the 10 m resolution data cube an
+indices, and the creation of the 10 m S2 resolution data cube.
 
 *PlanetScope_and_LiDAR_processing.R* This script contains code for
 pre-processing both the LiDAR data and optical Planet Labs data. This
