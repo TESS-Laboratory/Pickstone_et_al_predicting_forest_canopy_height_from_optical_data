@@ -1,5 +1,7 @@
+##this code is used to create a subsample of the data for github
 library(tidyverse)
 library(terra)
+library(raster)
 
 # load in the datafile ----------------------------------------------------
 data_path <- "/raid/home/bp424/Documents/MTHM603/Data"
@@ -20,7 +22,7 @@ df_comb <- read_csv(file.path(data_path, "combined_df.csv")) #combined data - 10
 
 # create sample of df_PS.3m -----------------------------------------------
    
-sample_df_PS.3m <- df_PS.3m[1:100000, ]
+sample_df_PS.3m <- df_PS.3m[1:50000, ]
 
 write.csv(sample_df_PS.3m, "sample_P3.csv", row.names = FALSE)
 
@@ -30,7 +32,7 @@ writeRaster(sample_PS3cube, filename = "sample_PS3cube.tif",
             overwrite = TRUE)
 
 # create sample of df_PS.10m ----------------------------------------------
-sample_df_PS.10m <- df_PS.10m[1:100000, ]
+sample_df_PS.10m <- df_PS.10m[1:50000, ]
 
 write.csv(sample_df_PS.10m, "sample_P10.csv", row.names = FALSE)
 
@@ -40,7 +42,7 @@ writeRaster(sample_PS10cube, filename = "sample_PS10cube.tif",
             overwrite = TRUE)
 
 # create sample of S2 ----------------------------------------------
-sample_df_S2 <- df_s2[1:100000, ]
+sample_df_S2 <- df_s2[1:50000, ]
 
 write.csv(sample_df_S2, "sample_S2.csv", row.names = FALSE)
 
@@ -50,7 +52,7 @@ writeRaster(sample_S2cube, filename = "sample_S2cube.tif",
             overwrite = TRUE)
 
 # create sample of combined -----------------------------------------------
-sample_comb <- df_comb[1:100000, ]
+sample_comb <- df_comb[1:50000, ]
 
 write.csv(sample_comb, "sample_comb.csv", row.names = FALSE)
 

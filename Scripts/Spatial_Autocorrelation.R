@@ -91,7 +91,7 @@ design = benchmark_grid(task, learner, list(spcv_plan_2,spcv_plan_3,
 
 
 
-future::plan("multisession", workers = 10) # sets the number of cores to run on -  we have
+future::plan("multisession", workers = 10) # sets the number of cores to run on
 bmr = mlr3::benchmark(design)
 
 aggr = bmr$aggregate(measures = c(msr("regr.rmse")))

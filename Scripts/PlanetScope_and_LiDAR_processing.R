@@ -86,7 +86,7 @@ CHM_project_3m <- project(CHM, kat_planet, method="bilinear")
 # download the digital terrain model from corpenicus ---------------------
 bbox <- st_bbox(kat_planet) 
 bbox_wgs84 <- bbox |>
-  st_as_sfc(crs=32749) |> #make sure you change this
+  st_as_sfc(crs=32749) |> 
   st_transform("EPSG:4326") |>
   st_bbox()
 
