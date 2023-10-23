@@ -1,10 +1,12 @@
 ##this script is for the use of visualisation of the predicted canopy height models 
 ##and the difference between the LiDAR derived CHM 
 library(raster)
+library(terra)
+library(tidyterra)
 library(tidyverse)
 library(patchwork)
 library(viridisLite)
-library(raster)
+
 
 #load in data cubes for each data source
 PScope_3m.cube <- rast(file.path(data_path,"PScope_3m.tif"))
@@ -82,7 +84,10 @@ df_3m_predict <- as.data.frame(PS3_predict, xy = TRUE)
     ))
 
 
-PS3.CHM_Predict_plot + PS3.diff_plot + PS3_density
+(PS3.CHM_Predict_plot + PS3.diff_plot + PS3_density) +
+  plot_annotation(tag_levels = 'a') &
+  theme(plot.tag = element_text(face = "bold", 
+                                family = "Times New Roman"))
 
 ggsave(file = "CHM_P3.png", width = 10.3, height = 5, dpi = 600)
 

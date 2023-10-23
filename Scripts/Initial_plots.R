@@ -43,7 +43,8 @@ CHM.3m <- mask(CHM.3m, PScope_3m_cube)
     axis.text.x = element_text(angle = 45, hjust = 1),
     legend.text = element_text(size = 3, family = "Times New Roman"), 
     legend.title = element_text(size = 3, family = "Times New Roman"), 
-    axis.ticks = element_line(linewidth = 0.1)
+    axis.ticks = element_line(linewidth = 0.1),
+    panel.grid = element_line(size = 0.1)
   ) +
   scale_fill_gradientn(
     name = "Canopy Height (m)",
@@ -68,7 +69,8 @@ CHM.10m <- mask(CHM.10m, S2_cube)
       axis.text.x = element_text(angle = 45, hjust = 1),
       legend.text = element_text(size = 3, family = "Times New Roman"), 
       legend.title = element_text(size = 3, family = "Times New Roman"), 
-      axis.ticks = element_line(linewidth = 0.1), 
+      axis.ticks = element_line(linewidth = 0.1),
+      panel.grid = element_line(size = 0.1),
       legend.position = "none") +
     scale_fill_gradientn(
       name = "Canopy Height (m)",
@@ -106,6 +108,7 @@ PS_to_rgb_df <- function(r, .min=0.001, .max= 0.1){
 #'
 #' @return A ggplot
 #' 
+#' 
 
 rgb_plot <- function(.x){
   PS_df <- PS_to_rgb_df(.x[[c("red", "green", "blue")]]) |>  # run the function to get a dataframe
@@ -120,8 +123,10 @@ rgb_plot <- function(.x){
           legend.title = element_text(size = 3, family = "Times New Roman"), 
           axis.title.x = element_blank(), 
           axis.title.y = element_blank(),
+          panel.grid = element_line(linewidth = 0.1),
           axis.ticks = element_line(linewidth = 0.1))+
     scale_fill_identity() +
+    scale_x_continuous(n.breaks = 4)+
     coord_fixed()+
     coord_sf(crs = 4326)
 }
@@ -173,7 +178,8 @@ rgb_plot <- function(.x){
           legend.title = element_text(size = 3, family = "Times New Roman"), 
           axis.title.x = element_blank(), 
           axis.title.y = element_blank(),
-          axis.ticks = element_line(linewidth = 0.1))+
+          axis.ticks = element_line(linewidth = 0.1), 
+          panel.grid = element_line(size = 0.1))+
     scale_fill_identity() +
     coord_fixed()+
     coord_sf(crs = 4326)
@@ -183,9 +189,14 @@ rgb_plot <- function(.x){
 (S2_plot.10m <- rgb_plot(projected_cube.S2))
 
 
-# combine the two plots and save ------------------------------------------
+# combine the four plots and save ------------------------------------------
+combined_plot <- CHM.3mplot + planet.plot.3m + CHM.10mplot + S2_plot.10m
 
-CHM.3mplot + planet.plot.3m + CHM.10mplot + S2_plot.10m
+combined_plot + 
+  plot_annotation(tag_levels = 'a') &
+  theme(plot.tag = element_text(size = 4, 
+                                face = "bold", 
+                                family = "Times New Roman"))
 
 
 ggsave(file="combined_data_plot.png", dpi = 600)

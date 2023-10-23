@@ -116,7 +116,11 @@ time_long <- pivot_longer(time_data, cols = c("MLR", "RF", "CNN"),
   theme(text = element_text(family = "Times New Roman"), 
         legend.position = "none"))
 
-MAE_plot + RMSE.plot + r2_plot + time_plot
+performance_plot <- MAE_plot + RMSE.plot + r2_plot + time_plot
 
+performance_plot + 
+  plot_annotation(tag_levels = 'a') &
+  theme(plot.tag = element_text(face = "bold", 
+                                family = "Times New Roman"))
 ggsave(file="Performance_models.png", width = 7.10, height = 5.6, dpi = 600)
 
