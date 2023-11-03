@@ -6,9 +6,6 @@ editor_options:
 
 
 
-https://zenodo.org/badge/644390426.svg
-
-
 [![DOI](https://zenodo.org/badge/644390426.svg)](https://zenodo.org/doi/10.5281/zenodo.10069410)
 
 # Pickstone-development
