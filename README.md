@@ -4,6 +4,11 @@ editor_options:
     wrap: 72
 ---
 
+
+
+https://zenodo.org/badge/644390426.svg
+
+
 # Pickstone-development
 
 This repository contains R code for processing, analysing and
