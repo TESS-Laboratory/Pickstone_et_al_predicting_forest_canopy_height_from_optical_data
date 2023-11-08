@@ -26,6 +26,7 @@ df_PS.3m <- read_csv(file.path(data_path, "PScope_3m_df.csv")) #PlanetScope - 3m
 df_PS.10m <- read_csv(file.path(data_path, "df_PScope_10m.csv")) #PlanetScope - 10m
 df_comb <- read_csv(file.path(data_path, "combined_df.csv")) #combined data - 10m 
 
+s2_predict <- project(s2_predict, s2.cube)
 
 #determine difference of each data source
 difference_PS3m <-  PS3_predict - PScope_3m.cube$CHM
@@ -121,7 +122,10 @@ df_10m_predict <- as.data.frame(PS10_predict, xy = TRUE)
     ))
 
 #combine the plots together 
-PS10.CHM_plot + PS10.diff_plot + PS10_density
+(PS10.CHM_plot + PS10.diff_plot + PS10_density)+
+  plot_annotation(tag_levels = 'a') &
+  theme(plot.tag = element_text(face = "bold", 
+                                family = "Times New Roman"))
 
 #save the plot
 ggsave(file = "CHM_P10.png", width = 10.30, height = 4, dpi = 600)
@@ -135,7 +139,7 @@ df_S2_predict <- as.data.frame(s2_predict, xy = TRUE)
 
 (S2_density <- ggplot() +
     geom_density(data = df_s2, aes(x = CHM, fill = "LiDAR"), alpha = 0.2) +
-    geom_density(data = df_S2_predict, aes(x = lyr1, fill = "Predict"), alpha = 0.2) +
+    geom_density(data = df_S2_predict, aes(x = response_all_original, fill = "Predict"), alpha = 0.2) +
     scale_fill_manual(values = c('LiDAR' = '#ffcf20ff', 'Predict' = '#2f9aa0ff'), 
                       breaks = c("LiDAR", "Predict"), 
                       name = NULL) +
@@ -154,7 +158,10 @@ df_S2_predict <- as.data.frame(s2_predict, xy = TRUE)
       panel.grid.minor = element_blank()
     ))
 
-S2.CHM_plot + S2.diff_plot + S2_density
+(S2.CHM_plot + S2.diff_plot + S2_density)+
+  plot_annotation(tag_levels = 'a') &
+  theme(plot.tag = element_text(face = "bold", 
+                                family = "Times New Roman"))
 
 ggsave(file = "CHM_S2.png", width = 10.30, height = 5, dpi = 600)
 
@@ -187,6 +194,9 @@ df_comb_predict <- as.data.frame(comb_predict, xy = TRUE)
     ))
 
 
-comb.CHM_plot + comb.diff_plot + comb_density
+(comb.CHM_plot + comb.diff_plot + comb_density)+
+  plot_annotation(tag_levels = 'a') &
+  theme(plot.tag = element_text(face = "bold", 
+                                family = "Times New Roman"))
 
 ggsave(file = "CHM_comb.png", width = 10.30, height = 5, dpi = 600)
