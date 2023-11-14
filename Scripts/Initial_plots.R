@@ -39,19 +39,19 @@ CHM.3m <- mask(CHM.3m, PScope_3m_cube)
   theme_bw() +
   geom_spatraster(data = CHM.3m, aes(fill = lyr1)) +  # Use aes() here to specify the fill color based on 'value'
   theme(
-    axis.text = element_text(size = 3, family = "Times New Roman"), 
+    axis.text = element_text(size = 8, family = "Times New Roman"), 
     axis.text.x = element_text(angle = 45, hjust = 1),
-    legend.text = element_text(size = 3, family = "Times New Roman"), 
-    legend.title = element_text(size = 3, family = "Times New Roman"), 
+    legend.text = element_text(size = 6, family = "Times New Roman"), 
+    legend.title = element_text(size = 8, family = "Times New Roman"), 
     axis.ticks = element_line(linewidth = 0.1),
-    panel.grid = element_line(size = 0.1)
+    panel.grid = element_line(linewidth = 0.1)
   ) +
   scale_fill_gradientn(
     name = "Canopy Height (m)",
     colors = viridisLite::viridis(n = 100),
     na.value = 'transparent',
     limits = c(0, 55), 
-    guide = guide_colorbar(barwidth = .5, barheight = 2)
+    guide = guide_colorbar(barwidth = 1, barheight = 4)
   ))
 
 
@@ -65,12 +65,12 @@ CHM.10m <- mask(CHM.10m, S2_cube)
     theme_bw() +
     geom_spatraster(data = CHM.10m, aes(fill = lyr1)) +
     theme(
-      axis.text = element_text(size = 3, family = "Times New Roman"), 
+      axis.text = element_text(size = 8, family = "Times New Roman"), 
       axis.text.x = element_text(angle = 45, hjust = 1),
-      legend.text = element_text(size = 3, family = "Times New Roman"), 
-      legend.title = element_text(size = 3, family = "Times New Roman"), 
+      legend.text = element_text(size = 8, family = "Times New Roman"), 
+      legend.title = element_text(size = 8, family = "Times New Roman"), 
       axis.ticks = element_line(linewidth = 0.1),
-      panel.grid = element_line(size = 0.1),
+      panel.grid = element_line(linewidth = 0.1),
       legend.position = "none") +
     scale_fill_gradientn(
       name = "Canopy Height (m)",
@@ -117,16 +117,15 @@ rgb_plot <- function(.x){
   ggplot(data=PS_df, aes(x=x, y=y, fill=rgb(red,green,blue))) +
     theme_bw()+
     geom_raster() +
-    theme(axis.text = element_text(size = 3, family = "Times New Roman"),
+    theme(axis.text = element_text(size = 8, family = "Times New Roman"),
           axis.text.x = element_text(angle = 45, hjust = 1),
-          legend.text = element_text(size = 3, family = "Times New Roman"), 
-          legend.title = element_text(size = 3, family = "Times New Roman"), 
+          legend.text = element_text(size = 8, family = "Times New Roman"), 
+          legend.title = element_text(size = 8, family = "Times New Roman"), 
           axis.title.x = element_blank(), 
           axis.title.y = element_blank(),
           panel.grid = element_line(linewidth = 0.1),
           axis.ticks = element_line(linewidth = 0.1))+
     scale_fill_identity() +
-    scale_x_continuous(n.breaks = 4)+
     coord_fixed()+
     coord_sf(crs = 4326)
 }
@@ -172,10 +171,10 @@ rgb_plot <- function(.x){
   ggplot(data=S2_df, aes(x=x, y=y, fill=rgb(red,green,blue))) +
     theme_bw()+
     geom_raster() +
-    theme(axis.text = element_text(size = 3, family = "Times New Roman"),
+    theme(axis.text = element_text(size = 8, family = "Times New Roman"),
           axis.text.x = element_text(angle = 45, hjust = 1),
-          legend.text = element_text(size = 3, family = "Times New Roman"), 
-          legend.title = element_text(size = 3, family = "Times New Roman"), 
+          legend.text = element_text(size = 8, family = "Times New Roman"), 
+          legend.title = element_text(size = 8, family = "Times New Roman"), 
           axis.title.x = element_blank(), 
           axis.title.y = element_blank(),
           axis.ticks = element_line(linewidth = 0.1), 
@@ -190,14 +189,14 @@ rgb_plot <- function(.x){
 
 
 # combine the four plots and save ------------------------------------------
-combined_plot <- CHM.3mplot + planet.plot.3m + CHM.10mplot + S2_plot.10m
+combined_plot <-  planet.plot.3m + CHM.3mplot +  S2_plot.10m + CHM.10mplot 
 
 combined_plot + 
   plot_annotation(tag_levels = 'a') &
-  theme(plot.tag = element_text(size = 4, 
+  theme(plot.tag = element_text(size = 8, 
                                 face = "bold", 
                                 family = "Times New Roman"))
 
 
-ggsave(file="combined_data_plot.png", dpi = 600)
+ggsave(file="combined_data_plot.png", width = 6.8, height = 6, dpi = 600)
 

@@ -79,6 +79,29 @@ create_CHM_plot <- function(p, color_scale_limits) {
   return(plot)
 }
 
+# create function for difference plot -------------------------------------
+
+create_CHM_diff_plot <- function(diff, color_scale_limits) {
+  plot_diff <- ggplot() +
+    theme_bw() +
+    geom_spatraster(data = diff) +
+    theme(
+      axis.text = element_text(size = 10, family = "Times New Roman"),
+      axis.text.x = element_text(angle = 45, hjust = 1),
+      legend.text = element_text(size = 8, family = "Times New Roman"),
+      legend.title = element_text(size = 10, family = "Times New Roman"),
+      axis.ticks = element_line(linewidth = 0.1)
+    ) +
+    scale_fill_gradientn(
+      name = "Canopy Height (m)",
+      colors = rev(viridisLite::magma(n = 100)),
+      na.value = 'transparent'
+    )
+  
+  return(plot_diff)
+}
+
+
 # define function ---------------------------------------------------------
 create_plot <- function(data, breaks, r_squared) {
   p <- ggplot(data, aes(x = truth, y = response)) +
@@ -125,7 +148,7 @@ P3_CNN_Plot <- create_plot(P3_CNN, P3_CNN_breaks, P3_CNN_R2)
 # #Plot PlanetScope 3m and difference plot --------------------------------
 #plot the canopy height models 
 PS3.CHM_Predict_plot <- create_CHM_plot(PS3_predict, c(0,50))
-PS3.diff_plot <- create_CHM_plot(difference_PS3m, c(-45, 25))
+PS3.diff_plot <- create_CHM_diff_plot(difference_PS3m, c(-45, 25))
 
 #plot the difference on a density plot
 df_3m_predict <- as.data.frame(PS3_predict, xy = TRUE)
@@ -175,7 +198,7 @@ P10_CNN_R2 <- "0.60"
 
 # Plot the 10 m PlanetScope CHM and difference plot -----------------------
 PS10.CHM_plot <- create_CHM_plot(PS10_predict, c(0,50))
-PS10.diff_plot <- create_CHM_plot(difference_PS10m, c(-35, 20))
+PS10.diff_plot <- create_CHM_diff_plot(difference_PS10m, c(-35, 20))
 
 
 #create density plot of the difference between LiDAR and predicted
@@ -230,14 +253,14 @@ S2_CNN_R2 <- "0.69"
 
 # Plot the S2  CHM and difference plot -----------------------
 S2.CHM_plot <- create_CHM_plot(s2_predict, c(0,50))
-S2.diff_plot <- create_CHM_plot(difference_S2, c(-25, 20))
+S2.diff_plot <- create_CHM_diff_plot(difference_S2, c(-25, 20))
 
 #create density plot of the difference between LiDAR and predicted
 df_S2_predict <- as.data.frame(s2_predict, xy = TRUE)
 
 (S2_density <- ggplot() +
     geom_density(data = df_s2, aes(x = CHM, fill = "LiDAR"), alpha = 0.2) +
-    geom_density(data = df_S2_predict, aes(x = lyr1, fill = "Predict"), alpha = 0.2) +
+    geom_density(data = df_S2_predict, aes(x = response_all_original, fill = "Predict"), alpha = 0.2) +
     scale_fill_manual(values = c('LiDAR' = '#ffcf20ff', 'Predict' = '#2f9aa0ff'), 
                       breaks = c("LiDAR", "Predict"), 
                       name = NULL) +
@@ -283,7 +306,7 @@ comb_CNN_R2 <- "0.68"
 
 # Plot the combined CHM and difference plot -----------------------
 comb.CHM_plot <- create_CHM_plot(comb_predict, c(0,50))
-comb.diff_plot <- create_CHM_plot(difference_comb, c(-30, 20))
+comb.diff_plot <- create_CHM_diff_plot(difference_comb, c(-30, 20))
 
 #create density plot of the difference between LiDAR and predicted
 df_comb_predict <- as.data.frame(comb_predict, xy = TRUE)
