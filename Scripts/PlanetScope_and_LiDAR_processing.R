@@ -16,7 +16,6 @@ library(patchwork)
 # Import Planet Labs Data -------------------------------------------------
 
 # Define Data Paths -------------------------------------------------------
-#data_path <- "/Users/bri/Library/CloudStorage/OneDrive-UniversityofExeter/University/Dissertation/Data"
 data_path <- "/raid/home/bp424/Documents/MTHM603/Data"
 
 S2_10m <- rast(file.path(data_path,"kat/kat_final_S2_2021-02-27.tif"))
@@ -41,7 +40,6 @@ dsm <- rast(file.path(data_path,"Original-DEMS/katingan_DEMS/katingan_DSM.tif"))
 #this will also save computing time for the calculations 
 kat_planet <- terra::crop(kat_planet, dtm_LiDAR)
 
-#NDVI does not need to be scaled so do this calculation first 
 kat_planet$NDVI <- (kat_planet$nir - kat_planet$red)/(kat_planet$nir +kat_planet$red)
 
 #scale down the 8 existing bands - stored within "names"
