@@ -73,7 +73,7 @@ create_CHM_plot <- function(p, color_scale_limits) {
       name = "Canopy Height (m)",
       colors = viridisLite::viridis(n = 100),
       na.value = 'transparent',
-      limits = color_scale_limits,  # Update the limits here
+      limits = color_scale_limits,  
     )
   
   return(plot)
