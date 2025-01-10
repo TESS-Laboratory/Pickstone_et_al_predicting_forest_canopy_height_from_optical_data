@@ -20,6 +20,6 @@ tm_basic <- function() {
 
 #plot the kat boundary over the top of the defined tmap 
 (kat_plot <- tm_shape(kat_boundary) + 
-  tm_borders(lwd = 2, col = "gray60") +   # Adding a border to the boundary outline
+  tm_borders(lwd = 2, col = "gray60") +   
   tm_basic())  
 
