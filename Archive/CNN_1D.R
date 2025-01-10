@@ -76,8 +76,8 @@ model %>% compile(
 # Train the model
 history <- model %>% fit(
   x_train_cnn, y_train,
-  epochs = 10, # You can adjust the number of epochs
-  batch_size = 32, # You can adjust the batch size
+  epochs = 10, 
+  batch_size = 32,
   validation_split = 0.2, 
   callbacks = c(callback_early_stopping(monitor = "val_mean_absolute_error",
                                         patience = 20))
@@ -115,8 +115,6 @@ print(paste0("Root Mean Squared Error: ", sprintf("%.2f", rmse)))
 rsq
 mae
 rmse
-
-
 
 
 
