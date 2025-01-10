@@ -114,7 +114,7 @@ df_10m_predict <- as.data.frame(PS10_predict, xy = TRUE)
       axis.title = element_text(family = "Times New Roman", size = 10),
       axis.line = element_line(linewidth = 0.2),
       axis.ticks = element_line(linewidth = 0.2),
-      legend.title = element_text(family = "Times New Roman", size = 10),  # Legend title font
+      legend.title = element_text(family = "Times New Roman", size = 10),  
       legend.text = element_text(family = "Times New Roman", size = 10),
       panel.grid.major = element_blank(),
       legend.position = "bottom", 
@@ -151,7 +151,7 @@ df_S2_predict <- as.data.frame(s2_predict, xy = TRUE)
       axis.title = element_text(family = "Times New Roman", size = 10),
       axis.line = element_line(linewidth = 0.2),
       axis.ticks = element_line(linewidth = 0.2),
-      legend.title = element_text(family = "Times New Roman", size = 10),  # Legend title font
+      legend.title = element_text(family = "Times New Roman", size = 10),  
       legend.text = element_text(family = "Times New Roman", size = 10),
       panel.grid.major = element_blank(),
       legend.position = "bottom", 
@@ -186,7 +186,7 @@ df_comb_predict <- as.data.frame(comb_predict, xy = TRUE)
       axis.title = element_text(family = "Times New Roman", size = 10),
       axis.line = element_line(linewidth = 0.2),
       axis.ticks = element_line(linewidth = 0.2),
-      legend.title = element_text(family = "Times New Roman", size = 10),  # Legend title font
+      legend.title = element_text(family = "Times New Roman", size = 10),  
       legend.text = element_text(family = "Times New Roman", size = 10),
       panel.grid.major = element_blank(),
       legend.position = "bottom", 
