@@ -54,8 +54,8 @@ r2_long <- pivot_longer(r2_data, cols = c("MLR", "RF", "CNN"),
   labs(x = "Data Source",
        y = expression(R^2))+
   scale_fill_manual(values = c("MLR" = "#3a5e8cff", "RF" = "#ffcf20ff", "CNN" = "#2f9aa0ff"),
-                                   breaks = c("MLR", "RF", "CNN")) +  # Set the order of legend
-  scale_x_discrete(limits = c("PS (3m)", "PS (10m)", "S2", "Combined")) +  # Set the order of x-axis
+                                   breaks = c("MLR", "RF", "CNN")) +  
+  scale_x_discrete(limits = c("PS (3m)", "PS (10m)", "S2", "Combined")) +  
   guides(fill = guide_legend(order = 1)) +  # Set the order of legend
   theme_minimal() +
   theme(text = element_text(family = "Times New Roman"), 
@@ -82,8 +82,8 @@ MAE_long <- pivot_longer(MAE_data, cols = c("MLR", "RF", "CNN"),
     labs(x = "Data Source",
          y = "MAE") +
     scale_fill_manual(values = c("MLR" = "#3a5e8cff", "RF" = "#ffcf20ff", "CNN" = "#2f9aa0ff"),
-                      breaks = c("MLR", "RF", "CNN")) +  # Set the order of legend
-    scale_x_discrete(limits = c("PS (3m)", "PS (10m)", "S2", "Combined")) +  # Set the order of x-axis
+                      breaks = c("MLR", "RF", "CNN")) + 
+    scale_x_discrete(limits = c("PS (3m)", "PS (10m)", "S2", "Combined")) + 
     guides(fill = guide_legend(order = 1)) +  # Set the order of legend
     theme_minimal() +
     theme(text = element_text(family = "Times New Roman"), 
@@ -110,8 +110,8 @@ time_long <- pivot_longer(time_data, cols = c("MLR", "RF", "CNN"),
        y = "Time (minutes)") +
   scale_fill_manual(values = c("MLR" = "#3a5e8cff", "RF" = "#ffcf20ff", "CNN" = "#2f9aa0ff"),
                     breaks = c("MLR", "RF", "CNN")) +  # Set the order of legend
-  scale_x_discrete(limits = c("PS (3m)", "PS (10m)", "S2", "Combined")) +  # Set the order of x-axis
-  guides(fill = guide_legend(order = 1)) +  # Set the order of legend
+  scale_x_discrete(limits = c("PS (3m)", "PS (10m)", "S2", "Combined")) +  
+  guides(fill = guide_legend(order = 1)) +  
   theme_minimal() +
   theme(text = element_text(family = "Times New Roman"), 
         legend.position = "none"))
