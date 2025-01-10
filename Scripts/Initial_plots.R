@@ -37,7 +37,7 @@ CHM.3m <- mask(CHM.3m, PScope_3m_cube)
 # Create the plot
 (CHM.3mplot <- ggplot() + 
   theme_bw() +
-  geom_spatraster(data = CHM.3m, aes(fill = lyr1)) +  # Use aes() here to specify the fill color based on 'value'
+  geom_spatraster(data = CHM.3m, aes(fill = lyr1)) +  
   theme(
     axis.text = element_text(size = 8, family = "Times New Roman"), 
     axis.text.x = element_text(angle = 45, hjust = 1),
