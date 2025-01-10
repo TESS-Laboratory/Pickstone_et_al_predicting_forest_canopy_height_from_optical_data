@@ -30,9 +30,7 @@ sampled_tibble <- df_PS.10m %>%
 process <- preProcess(as.data.frame(sampled_tibble), method=c("range"))
 
 df_PS.10m_norm <- predict(process, as.data.frame(sampled_tibble))
-# this is a dataset provided in mlr3spatiotempcv
-# for your example you will have to create a spatioptemp class
-# here we also have to remove incomplete rows (not relevant to you)
+
 task_st <- TaskRegrST$new(
   id = "kat.CHM", 
   backend = df_PS.10m_norm,  #change this to the dataframe you are interested in modelling
@@ -58,7 +56,7 @@ resampling <- mlr3::rsmp("repeated_spcv_coords", folds = nfolds, repeats = 2)
 # instantiate the resampling object using the spatial task.
 resampling$instantiate(task_st)
 
-# get the cooks farm data as a tibble (this shouldn't be necessary in your case)
+# get the cooks farm data as a tibble
 #insert input of backend
 #cooksfarm_tibble <- as_tibble(task_st$data()) |>
 #  dplyr::select(dplyr::where(is.numeric)) # only numeric columns
