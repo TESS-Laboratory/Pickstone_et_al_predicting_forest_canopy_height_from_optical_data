@@ -96,7 +96,7 @@ resampling_results <- purrr::map(1:nfolds, function(i) {
   
   # Compile the model with an appropriate optimizer and loss function
   model %>% compile(
-    optimizer = "adam",  # Adjust learning rate
+    optimizer = "adam", 
     loss = "mean_squared_error",  
     metrics = c("mean_absolute_error", "mean_squared_error")
   )
@@ -442,7 +442,7 @@ resampling_results <- purrr::map(1:nfolds, function(i) {
   
   # Compile the model with an appropriate optimizer and loss function
   model %>% compile(
-    optimizer = "adam",  # Adjust learning rate
+    optimizer = "adam", 
     loss = "mean_squared_error",  
     metrics = c("mean_absolute_error", "mean_squared_error")
   )
@@ -549,12 +549,12 @@ ggplot(results_df) +
     trans = scales::yj_trans(0.1),
     option = "G",
     direction = -1,
-    breaks = seq(0, 3000, length.out = 3)  # Adjust the range and number of breaks as needed
+    breaks = seq(0, 3000, length.out = 3)  
   ) +
   geom_abline(slope = 1, linewidth = 0.2) +
   theme_light() +
   theme(
-    text = element_text(family = "Times New Roman"),  # Set font to Times New Roman
+    text = element_text(family = "Times New Roman"),  
     axis.text = element_text(size = 10),              
     axis.title = element_text(size = 10),             
     legend.text = element_text(size = 8),            
@@ -563,7 +563,7 @@ ggplot(results_df) +
   labs(x = "LiDAR Canopy Height (m)", 
        y = "Predicted Canopy Height (m)", 
        fill = "Count")+ 
-  scale_x_continuous(breaks = seq(0, 40, by = 10)) +  # Set x-axis tick marks to go up in 10s
+  scale_x_continuous(breaks = seq(0, 40, by = 10)) + 
   scale_y_continuous(breaks = seq(-10, 40, by = 10), limits = c(-10, 40))
 
 ggsave(file="CNN.comb.plots.png", dpi = 600)
