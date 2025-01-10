@@ -112,7 +112,7 @@ mpc_dtm_src <- function(aoi_box,
 dtm.3m <- mpc_dtm_src(bbox_wgs84) |> # call the function to get the tile urls
   lapply(rast) |> # iterate over the tiles and load as a spatRaster object
   terra::sprc() |> # convert to a collection
-  terra::merge() |> # merge the tiles - basic mosaic - nothing overlaps here so this is fine.
+  terra::merge() |> 
   project(kat_planet, method="bilinear") # project into our desired CRS and extent etc.
 names(dtm.3m) <- "dtm"
 
@@ -211,7 +211,7 @@ CHM_df_1m <- as.data.frame(CHM)
       axis.ticks = element_line(linewidth = 0.2),
       legend.position = c(0.85, 0.85),  
       legend.justification = c(1, 1),  # Top-right corner
-      legend.title = element_text(family = "Times New Roman", size = 8),  # Legend title font
+      legend.title = element_text(family = "Times New Roman", size = 8),  
       legend.text = element_text(family = "Times New Roman", size = 6),
       legend.key.size = unit(0.6, "lines"),  
       panel.grid.major = element_blank(),
