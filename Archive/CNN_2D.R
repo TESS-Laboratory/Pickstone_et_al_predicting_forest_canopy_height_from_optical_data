@@ -24,8 +24,7 @@ df_PS.10m_norm
 
 
 process$ranges
-# Assuming your dataframe is named df_PS.10m
-# Remove the first two columns from the dataframe
+# Remove the first two columns from the df_s2
 df_s2 <- df_s2_norm[, -c(1, 2)]
 
 
@@ -58,13 +57,11 @@ X_train <- as.array(X_train)
 X_test <- as.array(X_test)
 
 
-# Convert y_train and y_test to numeric arrays
-# Convert y_train and y_test to numeric vectors
+
 y_train <- unlist(y_train)
 y_test <- unlist(y_test)
 
 
-#set up the CNN
 #set up the CNN
 model <- keras_model_sequential() %>%
   layer_conv_2d(filters = 32, kernel_size = c(3,3), activation = 'relu', input_shape = c(10,10,29)) %>% 
@@ -107,8 +104,8 @@ model %>%
 
 history <- model %>% fit(
   X_train, y_train,
-  epochs = 10, # You can adjust the number of epochs
-  batch_size = 64, # You can adjust the batch size
+  epochs = 10, 
+  batch_size = 64, 
   validation_split = 0.1, 
   callbacks = c(callback_early_stopping(monitor = "val_mean_absolute_error",
                                         patience = 20))
@@ -127,19 +124,19 @@ chm_min <- 0.1052788
 chm_max <- 39.3324928
 
 
-# Undo the normalization on the predicted values (y_pred)
+# Undo the normalisation on the predicted values (y_pred)
 y_pred_original <- (y_pred * (chm_max - chm_min)) + chm_min
 
-# Undo the normalization on y_test (target variable)
+# Undo the normalisation on y_test (target variable)
 y_test_original <- (y_test * (chm_max - chm_min)) + chm_min
 
-# Calculate R-squared (R^2)
+# Calculate R-squared
 rsq <- cor(y_test, y_pred)^2
 rsq
-# Calculate Mean Absolute Error (MAE)
+# Calculate MAE
 mae <- mean(abs(y_test_original - y_pred_original))
 
-# Calculate Root Mean Squared Error (RMSE)
+# Calculate RMSE
 rmse <- sqrt(mean((y_test_original - y_pred_original)^2))
 
 # Print the results
